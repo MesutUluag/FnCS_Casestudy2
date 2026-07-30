@@ -16,25 +16,39 @@ public class WarehouseRepository implements WarehouseStore, PanacheRepository<Db
 
   @Override
   public void create(Warehouse warehouse) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("Unimplemented method 'create'");
+    DbWarehouse entity = new DbWarehouse();
+    entity.businessUnitCode = warehouse.businessUnitCode;
+    entity.location = warehouse.location;
+    entity.capacity = warehouse.capacity;
+    entity.stock = warehouse.stock;
+    entity.createdAt = warehouse.createdAt;
+    entity.archivedAt = warehouse.archivedAt;
+    persist(entity);
   }
 
   @Override
   public void update(Warehouse warehouse) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("Unimplemented method 'replace'");
+    DbWarehouse entity = find("businessUnitCode", warehouse.businessUnitCode).firstResult();
+    if (entity != null) {
+      entity.location = warehouse.location;
+      entity.capacity = warehouse.capacity;
+      entity.stock = warehouse.stock;
+      entity.createdAt = warehouse.createdAt;
+      entity.archivedAt = warehouse.archivedAt;
+    }
   }
 
   @Override
   public void remove(Warehouse warehouse) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("Unimplemented method 'remove'");
+    DbWarehouse entity = find("businessUnitCode", warehouse.businessUnitCode).firstResult();
+    if (entity != null) {
+      delete(entity);
+    }
   }
 
   @Override
   public Warehouse findByBusinessUnitCode(String buCode) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("Unimplemented method 'findById'");
+    DbWarehouse entity = find("businessUnitCode", buCode).firstResult();
+    return entity != null ? entity.toWarehouse() : null;
   }
 }

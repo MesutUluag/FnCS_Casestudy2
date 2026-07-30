@@ -61,7 +61,6 @@
       padding: 20px 24px;
       margin-bottom: 20px;
     }
-    .card h2 { font-size: 15px; font-weight: 600; margin-bottom: 16px; border-bottom: 1px solid #e5e7eb; padding-bottom: 10px; }
 
     /* ── forms ── */
     .form-row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; align-items: flex-end; }
@@ -146,6 +145,65 @@
 
     /* ── loading ── */
     .loading { color: #57606a; font-size: 12px; font-style: italic; padding: 8px 0; }
+
+    /* ── tooltips ── */
+    .tip {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #e5e7eb;
+      color: #57606a;
+      font-size: 10px;
+      font-weight: 700;
+      cursor: default;
+      vertical-align: middle;
+      margin-left: 5px;
+      flex-shrink: 0;
+    }
+    .tip::after {
+      content: attr(data-tip);
+      position: absolute;
+      bottom: calc(100% + 6px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1f2328;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 400;
+      line-height: 1.5;
+      padding: 7px 10px;
+      border-radius: 6px;
+      white-space: pre-line;
+      width: max-content;
+      max-width: 280px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity .15s;
+      z-index: 100;
+    }
+    .tip:hover::after { opacity: 1; }
+    /* flip tooltip downward when near top of viewport */
+    .tip.tip-down::after {
+      bottom: auto;
+      top: calc(100% + 6px);
+    }
+    /* tooltip on regular inputs via title — browser handles natively; we only need .tip for richer text */
+    .card h2 { font-size: 15px; font-weight: 600; margin-bottom: 16px; border-bottom: 1px solid #e5e7eb; padding-bottom: 10px; display: flex; align-items: center; gap: 0; }
+    .rule-box {
+      font-size: 11px;
+      color: #57606a;
+      background: #f7f8fa;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      padding: 8px 12px;
+      margin-bottom: 14px;
+      line-height: 1.7;
+    }
+    .rule-box strong { color: #1f2328; }
   </style>
 </head>
 <body>
@@ -170,25 +228,39 @@
 <div id="tab-products" class="tab-panel active">
 
   <div class="card">
-    <h2 id="product-form-title">Add Product</h2>
+    <h2 id="product-form-title">Add Product
+      <span class="tip" data-tip="Products are the goods carried in warehouses and sold at stores.&#10;A product can be fulfilled by up to 2 warehouses per store.&#10;One warehouse can carry at most 5 different product types.">?</span>
+    </h2>
     <div id="product-alert" class="alert"></div>
     <form onsubmit="saveProduct(event)">
       <div class="form-row">
         <div class="form-group">
-          <label>Name *</label>
-          <input id="product-name" type="text" placeholder="e.g. KALLAX" required/>
+          <label>Name *
+            <span class="tip" data-tip="Unique display name for this product (e.g. KALLAX, BILLY).&#10;Used to identify the product across stores and warehouses.">?</span>
+          </label>
+          <input id="product-name" type="text" placeholder="e.g. KALLAX" required
+                 title="Unique display name for this product — used to identify it across stores and warehouses."/>
         </div>
         <div class="form-group">
-          <label>Description</label>
-          <input id="product-description" type="text" placeholder="Optional"/>
+          <label>Description
+            <span class="tip" data-tip="Optional free-text description shown in the product list.">?</span>
+          </label>
+          <input id="product-description" type="text" placeholder="Optional"
+                 title="Optional free-text description shown in the product list."/>
         </div>
         <div class="form-group" style="max-width:120px">
-          <label>Price</label>
-          <input id="product-price" type="number" step="0.01" min="0" placeholder="0.00"/>
+          <label>Price
+            <span class="tip" data-tip="Unit price in euros. Optional — leave blank if not applicable.">?</span>
+          </label>
+          <input id="product-price" type="number" step="0.01" min="0" placeholder="0.00"
+                 title="Unit price in euros. Leave blank if not applicable."/>
         </div>
         <div class="form-group" style="max-width:100px">
-          <label>Stock</label>
-          <input id="product-stock" type="number" min="0" placeholder="0"/>
+          <label>Stock
+            <span class="tip" data-tip="Current total stock count for this product across all locations.&#10;Must be ≥ 0.">?</span>
+          </label>
+          <input id="product-stock" type="number" min="0" placeholder="0"
+                 title="Current total stock count for this product. Must be ≥ 0."/>
         </div>
         <div class="form-group" style="max-width:80px; justify-content:flex-end">
           <button type="submit" class="btn btn-primary">Save</button>
@@ -213,17 +285,25 @@
 <div id="tab-stores" class="tab-panel">
 
   <div class="card">
-    <h2 id="store-form-title">Add Store</h2>
+    <h2 id="store-form-title">Add Store
+      <span class="tip" data-tip="Stores are the retail outlets that receive products from warehouses.&#10;Each store can be served by at most 3 different warehouses.&#10;Each product can be fulfilled to one store by at most 2 warehouses.">?</span>
+    </h2>
     <div id="store-alert" class="alert"></div>
     <form onsubmit="saveStore(event)">
       <div class="form-row">
         <div class="form-group">
-          <label>Name *</label>
-          <input id="store-name" type="text" placeholder="e.g. TONSTAD" required/>
+          <label>Name *
+            <span class="tip" data-tip="Unique store name (e.g. TONSTAD, AMSTERDAM-NORTH).&#10;Used in fulfilment association lookups.">?</span>
+          </label>
+          <input id="store-name" type="text" placeholder="e.g. TONSTAD" required
+                 title="Unique store name used in fulfilment association lookups."/>
         </div>
         <div class="form-group" style="max-width:160px">
-          <label>Products in Stock</label>
-          <input id="store-qty" type="number" min="0" placeholder="0"/>
+          <label>Products in Stock
+            <span class="tip" data-tip="Total number of product units currently held at this store.&#10;Updated when warehouse shipments arrive.">?</span>
+          </label>
+          <input id="store-qty" type="number" min="0" placeholder="0"
+                 title="Total product units currently held at this store. Updated on warehouse shipments."/>
         </div>
         <div class="form-group" style="max-width:80px; justify-content:flex-end">
           <button type="submit" class="btn btn-primary">Save</button>
@@ -248,17 +328,28 @@
 <div id="tab-warehouses" class="tab-panel">
 
   <div class="card">
-    <h2>Create Warehouse</h2>
+    <h2>Create Warehouse
+      <span class="tip" data-tip="A warehouse stores physical products and fulfils orders to stores.&#10;&#10;Business rules enforced on creation:&#10;• Business Unit Code must be unique across active warehouses.&#10;• Location must exist in the system.&#10;• A location has a max number of warehouses it can host.&#10;• Capacity must not exceed the location's max capacity.&#10;• Initial stock must not exceed the warehouse capacity.">?</span>
+    </h2>
+    <div class="rule-box">
+      <strong>Create rules:</strong> BUC must be unique · Location must exist · Capacity ≤ location max capacity · Stock ≤ capacity · Location cannot exceed its warehouse limit.
+    </div>
     <div id="warehouse-alert" class="alert"></div>
     <form onsubmit="createWarehouse(event)">
       <div class="form-row">
         <div class="form-group">
-          <label>Business Unit Code *</label>
-          <input id="wh-buc" type="text" placeholder="e.g. MWH.099" required/>
+          <label>Business Unit Code *
+            <span class="tip" data-tip="Unique identifier for this warehouse unit (e.g. MWH.001).&#10;Must be globally unique — no two active warehouses can share a BUC.&#10;Format convention: MWH.&lt;3-digit-number&gt;">?</span>
+          </label>
+          <input id="wh-buc" type="text" placeholder="e.g. MWH.099" required
+                 title="Unique warehouse identifier (e.g. MWH.001). No two active warehouses may share the same BUC."/>
         </div>
         <div class="form-group">
-          <label>Location *</label>
-          <select id="wh-location" required>
+          <label>Location *
+            <span class="tip" data-tip="The physical location this warehouse belongs to.&#10;Each location caps the number of warehouses it can host and their combined max capacity.&#10;See the Locations tab for limits.">?</span>
+          </label>
+          <select id="wh-location" required
+                  title="Physical location for this warehouse. Each location has a max warehouse count and max capacity — see the Locations tab.">
             <option value="">— select location —</option>
             <option>ZWOLLE-001</option><option>ZWOLLE-002</option>
             <option>AMSTERDAM-001</option><option>AMSTERDAM-002</option>
@@ -267,12 +358,18 @@
           </select>
         </div>
         <div class="form-group" style="max-width:110px">
-          <label>Capacity *</label>
-          <input id="wh-capacity" type="number" min="1" placeholder="100" required/>
+          <label>Capacity *
+            <span class="tip" data-tip="Maximum number of product units this warehouse can hold.&#10;Must be ≤ the location's max capacity.&#10;Cannot be reduced below current stock during a replace.">?</span>
+          </label>
+          <input id="wh-capacity" type="number" min="1" placeholder="100" required
+                 title="Max units this warehouse can hold. Must be ≤ the location's max capacity."/>
         </div>
         <div class="form-group" style="max-width:110px">
-          <label>Stock</label>
-          <input id="wh-stock" type="number" min="0" placeholder="0"/>
+          <label>Stock
+            <span class="tip" data-tip="Units currently stored in this warehouse at creation time.&#10;Must be ≤ capacity. Defaults to 0.">?</span>
+          </label>
+          <input id="wh-stock" type="number" min="0" placeholder="0"
+                 title="Units currently stored at creation. Must be ≤ capacity. Defaults to 0."/>
         </div>
         <div class="form-group" style="max-width:80px; justify-content:flex-end">
           <button type="submit" class="btn btn-primary">Create</button>
@@ -282,21 +379,28 @@
   </div>
 
   <div class="card">
-    <h2>Replace Warehouse</h2>
-    <p style="font-size:12px;color:#57606a;margin-bottom:12px">
-      Archives the existing warehouse and creates a new one under the same Business Unit Code.
-      New stock must match the old warehouse stock.
-    </p>
+    <h2>Replace Warehouse
+      <span class="tip" data-tip="Replace archives the current active warehouse and creates a new one under the same BUC.&#10;&#10;Business rules enforced on replace:&#10;• The target BUC must exist and not be archived.&#10;• New capacity must accommodate the existing stock (new capacity ≥ old stock).&#10;• New stock must exactly match the old warehouse stock.&#10;• New location must still be valid for the given constraints.">?</span>
+    </h2>
+    <div class="rule-box">
+      <strong>Replace rules:</strong> BUC must be active · New capacity ≥ old stock · New stock = old stock · Location constraints still apply.
+    </div>
     <div id="replace-alert" class="alert"></div>
     <form onsubmit="replaceWarehouse(event)">
       <div class="form-row">
         <div class="form-group">
-          <label>Business Unit Code to replace *</label>
-          <input id="rep-buc" type="text" placeholder="e.g. MWH.001" required/>
+          <label>Business Unit Code to replace *
+            <span class="tip" data-tip="The BUC of the currently active warehouse to archive and replace.&#10;Must match an existing, non-archived warehouse exactly.">?</span>
+          </label>
+          <input id="rep-buc" type="text" placeholder="e.g. MWH.001" required
+                 title="BUC of the active warehouse to be archived and replaced. Must match exactly."/>
         </div>
         <div class="form-group">
-          <label>New Location *</label>
-          <select id="rep-location" required>
+          <label>New Location *
+            <span class="tip" data-tip="Location for the replacement warehouse.&#10;Checked against location capacity and warehouse-count limits.">?</span>
+          </label>
+          <select id="rep-location" required
+                  title="Location for the replacement warehouse. Location limits still apply.">
             <option value="">— select location —</option>
             <option>ZWOLLE-001</option><option>ZWOLLE-002</option>
             <option>AMSTERDAM-001</option><option>AMSTERDAM-002</option>
@@ -305,12 +409,18 @@
           </select>
         </div>
         <div class="form-group" style="max-width:110px">
-          <label>New Capacity *</label>
-          <input id="rep-capacity" type="number" min="1" required/>
+          <label>New Capacity *
+            <span class="tip" data-tip="Capacity of the replacement warehouse.&#10;Must be ≥ the current stock of the warehouse being replaced (cannot lose goods).">?</span>
+          </label>
+          <input id="rep-capacity" type="number" min="1" required
+                 title="Must be ≥ current stock of the warehouse being replaced."/>
         </div>
         <div class="form-group" style="max-width:110px">
-          <label>New Stock *</label>
-          <input id="rep-stock" type="number" min="0" required/>
+          <label>New Stock *
+            <span class="tip" data-tip="Stock transferred to the replacement warehouse.&#10;Must exactly equal the old warehouse's current stock — no goods are lost or created during a replacement.">?</span>
+          </label>
+          <input id="rep-stock" type="number" min="0" required
+                 title="Must exactly equal the old warehouse's current stock. No goods are lost or created."/>
         </div>
         <div class="form-group" style="max-width:80px; justify-content:flex-end">
           <button type="submit" class="btn btn-warning">Replace</button>
@@ -320,7 +430,9 @@
   </div>
 
   <div class="card">
-    <h2>Active Warehouses</h2>
+    <h2>Active Warehouses
+      <span class="tip" data-tip="Only non-archived warehouses are shown here.&#10;Archived warehouses are retained in the database for audit purposes but are excluded from all business rule checks.&#10;Utilisation badge: green &lt;60% · yellow 60–89% · red ≥90%.">?</span>
+    </h2>
     <div id="warehouse-list"><p class="loading">Loading…</p></div>
   </div>
 </div>
@@ -331,26 +443,38 @@
 <div id="tab-fulfilment" class="tab-panel">
 
   <div class="card">
-    <h2>Associate Warehouse → Store → Product</h2>
-    <p style="font-size:12px;color:#57606a;margin-bottom:12px">
-      Constraints: max <strong>2 warehouses</strong> per product per store ·
-      max <strong>3 warehouses</strong> per store ·
-      max <strong>5 product types</strong> per warehouse.
-    </p>
+    <h2>Associate Warehouse → Store → Product
+      <span class="tip" data-tip="A fulfilment association declares that a warehouse is responsible for supplying a specific product to a specific store.&#10;&#10;All three constraints are enforced server-side:&#10;• Max 2 warehouses per product per store&#10;• Max 3 warehouses per store (across all products)&#10;• Max 5 product types per warehouse&#10;• Exact duplicate triples are rejected (409)">?</span>
+    </h2>
+    <div class="rule-box">
+      <strong>Constraint 1:</strong> A product can be supplied to one store by at most <strong>2 warehouses</strong>.<br>
+      <strong>Constraint 2:</strong> A store can be served by at most <strong>3 warehouses</strong> (across all products).<br>
+      <strong>Constraint 3:</strong> A warehouse can hold at most <strong>5 distinct product types</strong>.<br>
+      <strong>Duplicate guard:</strong> The exact (warehouse, store, product) triple must be unique.
+    </div>
     <div id="fulfilment-alert" class="alert"></div>
     <form onsubmit="createFulfilment(event)">
       <div class="form-row">
         <div class="form-group">
-          <label>Warehouse ID *</label>
-          <input id="f-warehouse" type="number" min="1" placeholder="1" required/>
+          <label>Warehouse ID *
+            <span class="tip" data-tip="Numeric DB id of the warehouse acting as the fulfilment source.&#10;See the Warehouses reference table below.&#10;A warehouse can hold at most 5 distinct product types (constraint 3).">?</span>
+          </label>
+          <input id="f-warehouse" type="number" min="1" placeholder="1" required
+                 title="Numeric DB id of the warehouse. A warehouse can hold at most 5 distinct product types."/>
         </div>
         <div class="form-group">
-          <label>Store ID *</label>
-          <input id="f-store" type="number" min="1" placeholder="1" required/>
+          <label>Store ID *
+            <span class="tip" data-tip="Numeric DB id of the destination store.&#10;See the Stores reference table below.&#10;A store can be served by at most 3 warehouses (constraint 2).">?</span>
+          </label>
+          <input id="f-store" type="number" min="1" placeholder="1" required
+                 title="Numeric DB id of the destination store. A store can be served by at most 3 warehouses."/>
         </div>
         <div class="form-group">
-          <label>Product ID *</label>
-          <input id="f-product" type="number" min="1" placeholder="1" required/>
+          <label>Product ID *
+            <span class="tip" data-tip="Numeric DB id of the product being supplied.&#10;See the Products reference table below.&#10;One product can be supplied to one store by at most 2 warehouses (constraint 1).">?</span>
+          </label>
+          <input id="f-product" type="number" min="1" placeholder="1" required
+                 title="Numeric DB id of the product. One product → one store can use at most 2 warehouses."/>
         </div>
         <div class="form-group" style="max-width:90px; justify-content:flex-end">
           <button type="submit" class="btn btn-primary">Associate</button>
@@ -360,22 +484,30 @@
   </div>
 
   <div class="card">
-    <h2>Fulfilment Associations</h2>
+    <h2>Fulfilment Associations
+      <span class="tip" data-tip="All active warehouse → store → product associations.&#10;Each row represents a single supply relationship.&#10;Use the reference tables below to look up IDs before creating new associations.">?</span>
+    </h2>
     <div id="fulfilment-list"><p class="loading">Loading…</p></div>
   </div>
 
   <!-- Reference tables -->
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
     <div class="card" style="margin-bottom:0">
-      <h2>Stores (IDs)</h2>
+      <h2>Stores (IDs)
+        <span class="tip tip-down" data-tip="Use these IDs in the Store ID field above.&#10;Max 3 warehouses can serve any one store.">?</span>
+      </h2>
       <div id="store-ref"><p class="loading">Loading…</p></div>
     </div>
     <div class="card" style="margin-bottom:0">
-      <h2>Products (IDs)</h2>
+      <h2>Products (IDs)
+        <span class="tip tip-down" data-tip="Use these IDs in the Product ID field above.&#10;Max 2 warehouses can supply one product to one store.">?</span>
+      </h2>
       <div id="product-ref"><p class="loading">Loading…</p></div>
     </div>
     <div class="card" style="margin-bottom:0">
-      <h2>Warehouses (IDs)</h2>
+      <h2>Warehouses (IDs)
+        <span class="tip tip-down" data-tip="Use these numeric IDs in the Warehouse ID field above.&#10;Max 5 distinct product types per warehouse.">?</span>
+      </h2>
       <div id="warehouse-ref"><p class="loading">Loading…</p></div>
     </div>
   </div>
@@ -386,10 +518,12 @@
 ══════════════════════════════════════════════════════════ -->
 <div id="tab-locations" class="tab-panel">
   <div class="card">
-    <h2>Available Locations</h2>
-    <p style="font-size:12px;color:#57606a;margin-bottom:16px">
-      Locations are statically configured. Each has a maximum number of warehouses and a maximum total capacity.
-    </p>
+    <h2>Available Locations
+      <span class="tip" data-tip="Locations are statically configured in LocationGateway.java.&#10;They cannot be created or deleted at runtime.&#10;&#10;Two rules are enforced when creating/replacing a warehouse:&#10;• The total number of active warehouses at a location cannot exceed its max.&#10;• Each new warehouse capacity cannot exceed the location's max capacity.">?</span>
+    </h2>
+    <div class="rule-box">
+      Locations are <strong>static</strong> — defined in <code>LocationGateway.java</code>. When creating a warehouse, the chosen location must not already be at its warehouse limit, and the requested capacity must not exceed the location's maximum.
+    </div>
     <div class="locations-grid" id="locations-grid"></div>
   </div>
 </div>
@@ -452,19 +586,23 @@ async function handleResponse(res, alertId, successMsg, onSuccess) {
 // ══════════════════════════════════════════════════════════════════════════════
 // PRODUCTS
 // ══════════════════════════════════════════════════════════════════════════════
+var _products = {};  // id → product object, avoids inline-onclick string escaping
+
 function loadProducts() {
   get('/product').then(products => {
+    _products = {};
+    products.forEach(p => _products[p.id] = p);
     var el = document.getElementById('product-list');
     if (!products.length) { el.innerHTML = '<p class="empty">No products yet.</p>'; return; }
     el.innerHTML = '<table><thead><tr><th>ID</th><th>Name</th><th>Description</th><th>Price</th><th>Stock</th><th>Actions</th></tr></thead><tbody>'
       + products.map(p => `<tr>
           <td>${p.id}</td>
-          <td><strong>${p.name}</strong></td>
-          <td>${p.description || '—'}</td>
+          <td><strong>${htmlEsc(p.name)}</strong></td>
+          <td>${p.description ? htmlEsc(p.description) : '—'}</td>
           <td>${p.price != null ? '€' + Number(p.price).toFixed(2) : '—'}</td>
           <td>${p.stock}</td>
           <td>
-            <button class="btn btn-sm" onclick="editProduct(${p.id},'${esc(p.name)}','${esc(p.description||'')}',${p.price||''},${p.stock})">Edit</button>
+            <button class="btn btn-sm" onclick="editProduct(${p.id})">Edit</button>
             <button class="btn btn-sm btn-danger" onclick="deleteProduct(${p.id})">Delete</button>
           </td>
         </tr>`).join('')
@@ -472,12 +610,14 @@ function loadProducts() {
   });
 }
 
-function editProduct(id, name, desc, price, stock) {
-  document.getElementById('product-edit-id').value = id;
-  document.getElementById('product-name').value = name;
-  document.getElementById('product-description').value = desc;
-  document.getElementById('product-price').value = price || '';
-  document.getElementById('product-stock').value = stock;
+function editProduct(id) {
+  var p = _products[id];
+  if (!p) return;
+  document.getElementById('product-edit-id').value = p.id;
+  document.getElementById('product-name').value = p.name;
+  document.getElementById('product-description').value = p.description || '';
+  document.getElementById('product-price').value = p.price != null ? p.price : '';
+  document.getElementById('product-stock').value = p.stock;
   document.getElementById('product-form-title').textContent = 'Edit Product #' + id;
   document.getElementById('product-cancel').style.display = 'inline-block';
   document.getElementById('product-name').focus();
@@ -518,17 +658,21 @@ async function deleteProduct(id) {
 // ══════════════════════════════════════════════════════════════════════════════
 // STORES
 // ══════════════════════════════════════════════════════════════════════════════
+var _stores = {};  // id → store object, avoids inline-onclick string escaping
+
 function loadStores() {
   get('/store').then(stores => {
+    _stores = {};
+    stores.forEach(s => _stores[s.id] = s);
     var el = document.getElementById('store-list');
     if (!stores.length) { el.innerHTML = '<p class="empty">No stores yet.</p>'; return; }
     el.innerHTML = '<table><thead><tr><th>ID</th><th>Name</th><th>Products in Stock</th><th>Actions</th></tr></thead><tbody>'
       + stores.map(s => `<tr>
           <td>${s.id}</td>
-          <td><strong>${s.name}</strong></td>
+          <td><strong>${htmlEsc(s.name)}</strong></td>
           <td>${s.quantityProductsInStock}</td>
           <td>
-            <button class="btn btn-sm" onclick="editStore(${s.id},'${esc(s.name)}',${s.quantityProductsInStock})">Edit</button>
+            <button class="btn btn-sm" onclick="editStore(${s.id})">Edit</button>
             <button class="btn btn-sm btn-danger" onclick="deleteStore(${s.id})">Delete</button>
           </td>
         </tr>`).join('')
@@ -536,12 +680,15 @@ function loadStores() {
   });
 }
 
-function editStore(id, name, qty) {
-  document.getElementById('store-edit-id').value = id;
-  document.getElementById('store-name').value = name;
-  document.getElementById('store-qty').value = qty;
+function editStore(id) {
+  var s = _stores[id];
+  if (!s) return;
+  document.getElementById('store-edit-id').value = s.id;
+  document.getElementById('store-name').value = s.name;
+  document.getElementById('store-qty').value = s.quantityProductsInStock;
   document.getElementById('store-form-title').textContent = 'Edit Store #' + id;
   document.getElementById('store-cancel').style.display = 'inline-block';
+  document.getElementById('store-name').focus();
 }
 
 function cancelStoreEdit() {
@@ -690,7 +837,7 @@ function loadWarehouseRef() {
     var el = document.getElementById('warehouse-ref');
     if (!list.length) { el.innerHTML = '<p class="empty">—</p>'; return; }
     el.innerHTML = '<table><thead><tr><th>ID</th><th>BUC</th></tr></thead><tbody>'
-      + list.map(w => `<tr><td>lookup by BUC</td><td>${w.businessUnitCode}</td></tr>`).join('')
+      + list.map(w => `<tr><td>${w.id != null ? w.id : '—'}</td><td>${w.businessUnitCode}</td></tr>`).join('')
       + '</tbody></table>';
   });
 }
@@ -721,6 +868,13 @@ function renderLocations() {
 
 // ── utility ───────────────────────────────────────────────────────────────────
 function esc(s) { return String(s).replace(/'/g, "\\'"); }
+function htmlEsc(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
 
 // ── boot ──────────────────────────────────────────────────────────────────────
 loadProducts();

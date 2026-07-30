@@ -42,6 +42,12 @@ public class FulfilmentAssociationRepository
     return count("warehouseId = ?1 and productId = ?2", warehouseId, productId) > 0;
   }
 
+  /** Whether the exact (warehouseId, storeId, productId) triple already exists (duplicate guard). */
+  public boolean associationExists(Long warehouseId, Long storeId, Long productId) {
+    return count("warehouseId = ?1 and storeId = ?2 and productId = ?3",
+        warehouseId, storeId, productId) > 0;
+  }
+
   /** All associations (for listing). */
   public List<FulfilmentAssociation> listAssociations() {
     return listAll();

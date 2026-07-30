@@ -1,0 +1,14 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="All Unit Tests" type="MavenRunConfiguration" factoryName="Maven">
+    <MavenSettings>
+      <option name="workingDirPath" value="$PROJECT_DIR$" />
+      <option name="goals" value="test" />
+      <option name="runMavenInBackground" value="false" />
+      <option name="commandLine" value="-Dtest=&quot;LocationGatewayTest,CreateWarehouseUseCaseTest,ArchiveWarehouseUseCaseTest,ReplaceWarehouseUseCaseTest,AssociateFulfilmentUseCaseTest&quot;" />
+    </MavenSettings>
+    <envs>
+      <env name="JAVA_HOME" value="/Library/Java/JavaVirtualMachines/jdk-17.0.3.1.jdk/Contents/Home" />
+    </envs>
+    <method v="2" />
+  </configuration>
+</component>

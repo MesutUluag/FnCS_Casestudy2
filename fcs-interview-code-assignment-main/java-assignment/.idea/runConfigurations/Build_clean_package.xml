@@ -1,0 +1,13 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Build (clean package)" type="MavenRunConfiguration" factoryName="Maven">
+    <MavenSettings>
+      <option name="workingDirPath" value="$PROJECT_DIR$" />
+      <option name="goals" value="clean package -DskipTests" />
+      <option name="runMavenInBackground" value="false" />
+    </MavenSettings>
+    <envs>
+      <env name="JAVA_HOME" value="/Library/Java/JavaVirtualMachines/jdk-17.0.3.1.jdk/Contents/Home" />
+    </envs>
+    <method v="2" />
+  </configuration>
+</component>

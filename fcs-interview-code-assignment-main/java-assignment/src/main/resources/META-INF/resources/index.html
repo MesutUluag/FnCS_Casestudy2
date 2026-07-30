@@ -1,153 +1,729 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-    <meta charset="utf-8"/>
-    <title>Hibernate ORM with Panache quickstart - Quarkus</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/wingcss/0.1.8/wing.min.css"/>
-    <style>
-        input[type=number] {
-            width: 100%;
-            padding: 12px 20px;
-            margin: 8px 0;
-            display: inline-block;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
-            -webkit-transition: .5s;
-            transition: .5s;
-            outline: 0;
-            font-family: 'Open Sans', serif;
-        }
-    </style>
-    <!-- Load AngularJS -->
-    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.8/angular.min.js"></script>
-    <script type="text/javascript">
-      var app = angular.module("ProductManagement", []);
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Fulfilment & Cost Study — Java Assignment</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-      //Controller Part
-      app.controller("ProductManagementController", function ($scope, $http) {
+    body {
+      font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      background: #f7f8fa;
+      color: #1f2328;
+    }
 
-        //Initialize page with default data which is blank in this example
-        $scope.products = [];
+    /* ── layout ── */
+    header {
+      background: #1f2328;
+      color: #fff;
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    header h1 { font-size: 18px; font-weight: 600; }
+    header span { font-size: 12px; color: #8b949e; margin-left: auto; }
 
-        $scope.form = {
-          id: -1,
-          name: ""
-        };
+    .tabs {
+      display: flex;
+      gap: 2px;
+      background: #e5e7eb;
+      padding: 4px;
+      margin: 24px 32px 0;
+      border-radius: 8px;
+      width: fit-content;
+    }
+    .tab-btn {
+      padding: 6px 18px;
+      border: none;
+      background: transparent;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      color: #57606a;
+      transition: background .15s, color .15s;
+    }
+    .tab-btn.active { background: #fff; color: #1f2328; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+    .tab-btn:hover:not(.active) { background: #fff6; color: #1f2328; }
 
-        //Now load the data from server
-        _refreshPageData();
+    .tab-panel { display: none; padding: 24px 32px 40px; }
+    .tab-panel.active { display: block; }
 
-        //HTTP POST/PUT methods for add/edit products
-        $scope.update = function () {
-          var method = "";
-          var url = "";
-          var data = {};
-          if ($scope.form.id == -1) {
-            //Id is absent so add products - POST operation
-            method = "POST";
-            url = '/product';
-            data.name = $scope.form.name;
-          } else {
-            //If Id is present, it's edit operation - PUT operation
-            method = "PUT";
-            url = '/product/' + $scope.form.id;
-            data.name = $scope.form.name;
-          }
+    /* ── cards ── */
+    .card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 20px 24px;
+      margin-bottom: 20px;
+    }
+    .card h2 { font-size: 15px; font-weight: 600; margin-bottom: 16px; border-bottom: 1px solid #e5e7eb; padding-bottom: 10px; }
 
-          $http({
-            method: method,
-            url: url,
-            data: angular.toJson(data),
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          }).then(_success, _error);
-        };
+    /* ── forms ── */
+    .form-row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; align-items: flex-end; }
+    .form-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 140px; }
+    .form-group label { font-size: 12px; color: #57606a; font-weight: 500; }
+    .form-group input, .form-group select {
+      padding: 7px 10px;
+      border: 1px solid #d0d7de;
+      border-radius: 6px;
+      font-size: 13px;
+      outline: none;
+      transition: border-color .15s;
+    }
+    .form-group input:focus, .form-group select:focus { border-color: #3b82d4; }
 
-        //HTTP DELETE- delete product by id
-        $scope.remove = function (product) {
-          $http({
-            method: 'DELETE',
-            url: '/product/' + product.id
-          }).then(_success, _error);
-        };
+    /* ── buttons ── */
+    .btn {
+      padding: 7px 16px;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity .15s;
+      white-space: nowrap;
+    }
+    .btn:hover { opacity: .85; }
+    .btn-primary { background: #1f2328; color: #fff; }
+    .btn-danger  { background: #cf222e; color: #fff; }
+    .btn-warning { background: #9a6700; color: #fff; }
+    .btn-sm      { padding: 4px 10px; font-size: 12px; }
 
-        //In case of edit products, populate form with product data
-        $scope.edit = function (product) {
-          $scope.form.name = product.name;
-          $scope.form.id = product.id;
-        };
+    /* ── tables ── */
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th { text-align: left; padding: 8px 10px; background: #f7f8fa; border-bottom: 1px solid #e5e7eb; font-weight: 600; color: #57606a; }
+    tbody td { padding: 8px 10px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: #f7f8fa; }
 
-          /* Private Methods */
-        //HTTP GET- get all products collection
-        function _refreshPageData() {
-          $http({
-            method: 'GET',
-            url: '/product'
-          }).then(function successCallback(response) {
-            $scope.products = response.data;
-          }, function errorCallback(response) {
-            console.log(response.statusText);
-          });
-        }
+    /* ── badges ── */
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-green  { background: #dafbe1; color: #1a7f37; }
+    .badge-red    { background: #ffdce0; color: #cf222e; }
+    .badge-blue   { background: #ddf4ff; color: #0969da; }
+    .badge-yellow { background: #fff8c5; color: #9a6700; }
 
-        function _success(response) {
-          _refreshPageData();
-          _clearForm()
-        }
+    /* ── alerts ── */
+    .alert {
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      margin-bottom: 14px;
+      display: none;
+    }
+    .alert-error   { background: #ffdce0; color: #cf222e; border: 1px solid #ffb8c0; }
+    .alert-success { background: #dafbe1; color: #1a7f37; border: 1px solid #9be9a8; }
+    .alert.show { display: block; }
 
-        function _error(response) {
-          alert(response.data.message || response.statusText);
-        }
+    /* ── locations sidebar ── */
+    .locations-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px;
+    }
+    .location-card {
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      padding: 12px 14px;
+      background: #f7f8fa;
+    }
+    .location-card .loc-name { font-weight: 600; font-size: 13px; margin-bottom: 4px; }
+    .location-card .loc-detail { font-size: 12px; color: #57606a; }
 
-        //Clear the form
-        function _clearForm() {
-          $scope.form.name = "";
-          $scope.form.id = -1;
-        }
-      });
-    </script>
+    /* ── empty state ── */
+    .empty { text-align: center; padding: 32px; color: #57606a; font-size: 13px; }
+
+    /* ── loading ── */
+    .loading { color: #57606a; font-size: 12px; font-style: italic; padding: 8px 0; }
+  </style>
 </head>
-<body ng-app="ProductManagement" ng-controller="ProductManagementController">
+<body>
 
-<div class="container">
-    <h1>Java Code Assignment</h1>
-    <p>This application demonstrates how a Quarkus application implements a CRUD endpoint to manage products using Hibernate ORM with Panache.
-        This management interface invokes the CRUD service endpoint, which interacts with a database using JPA and several other well known libraries.
-    </p>
+<header>
+  <h1>⚡ Fulfilment &amp; Cost Study — Java Assignment</h1>
+  <span>Quarkus 3.13.3 · Java 17 · PostgreSQL</span>
+</header>
 
-    <h3>Add/Edit an Product to the Warehouse</h3>
-    <form ng-submit="update()">
-        <div class="row">
-            <div class="col-6"><input type="text" placeholder="Name" ng-model="form.name" size="60"/></div>
-        </div>
-        <input type="submit" value="Save"/>
-    </form>
-
-    <h3>Product List</h3>
-    <div class="row">
-        <div class="col-2">Name</div>
-    </div>
-    <div class="row" ng-repeat="product in products">
-        <div class="col-2">{{ product.name }}</div>
-        <div class="col-8"><a ng-click="edit( product )" class="btn">Edit</a> <a ng-click="remove( product )" class="btn">Remove</a>
-        </div>
-    </div>
-
-    <p>Behind the scenes, we have:
-        <ul>
-            <li>Hibernate ORM with Panache taking care of all CRUD operations</li>
-            <li>RESTEasy powering the REST API</li>
-            <li>ArC, a CDI based dependency injection framework</li>
-            <li>the Narayana Transaction Manager coordinating all transactions</li>
-            <li>Agroal, the high performance Datasource implementation</li>
-            <li>Infinispan used as Hibernate 2nd level caching: enabled on both entities and queries</li>
-            <li>The Undertow webserver</li>
-            <li>Some magic bytecode generation plugged in the compiler...</li>
-        </ul>
-    </p>
+<!-- ── Tab navigation ── -->
+<div class="tabs">
+  <button class="tab-btn active" onclick="showTab('products')">📦 Products</button>
+  <button class="tab-btn" onclick="showTab('stores')">🏪 Stores</button>
+  <button class="tab-btn" onclick="showTab('warehouses')">🏭 Warehouses</button>
+  <button class="tab-btn" onclick="showTab('fulfilment')">🔗 Fulfilment</button>
+  <button class="tab-btn" onclick="showTab('locations')">📍 Locations</button>
 </div>
 
+<!-- ══════════════════════════════════════════════════════════
+     PRODUCTS TAB
+══════════════════════════════════════════════════════════ -->
+<div id="tab-products" class="tab-panel active">
+
+  <div class="card">
+    <h2 id="product-form-title">Add Product</h2>
+    <div id="product-alert" class="alert"></div>
+    <form onsubmit="saveProduct(event)">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Name *</label>
+          <input id="product-name" type="text" placeholder="e.g. KALLAX" required/>
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <input id="product-description" type="text" placeholder="Optional"/>
+        </div>
+        <div class="form-group" style="max-width:120px">
+          <label>Price</label>
+          <input id="product-price" type="number" step="0.01" min="0" placeholder="0.00"/>
+        </div>
+        <div class="form-group" style="max-width:100px">
+          <label>Stock</label>
+          <input id="product-stock" type="number" min="0" placeholder="0"/>
+        </div>
+        <div class="form-group" style="max-width:80px; justify-content:flex-end">
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+        <div class="form-group" style="max-width:80px; justify-content:flex-end">
+          <button type="button" class="btn" onclick="cancelProductEdit()" id="product-cancel" style="display:none">Cancel</button>
+        </div>
+      </div>
+      <input type="hidden" id="product-edit-id"/>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Product List</h2>
+    <div id="product-list"><p class="loading">Loading…</p></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     STORES TAB
+══════════════════════════════════════════════════════════ -->
+<div id="tab-stores" class="tab-panel">
+
+  <div class="card">
+    <h2 id="store-form-title">Add Store</h2>
+    <div id="store-alert" class="alert"></div>
+    <form onsubmit="saveStore(event)">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Name *</label>
+          <input id="store-name" type="text" placeholder="e.g. TONSTAD" required/>
+        </div>
+        <div class="form-group" style="max-width:160px">
+          <label>Products in Stock</label>
+          <input id="store-qty" type="number" min="0" placeholder="0"/>
+        </div>
+        <div class="form-group" style="max-width:80px; justify-content:flex-end">
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+        <div class="form-group" style="max-width:80px; justify-content:flex-end">
+          <button type="button" class="btn" onclick="cancelStoreEdit()" id="store-cancel" style="display:none">Cancel</button>
+        </div>
+      </div>
+      <input type="hidden" id="store-edit-id"/>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Store List</h2>
+    <div id="store-list"><p class="loading">Loading…</p></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     WAREHOUSES TAB
+══════════════════════════════════════════════════════════ -->
+<div id="tab-warehouses" class="tab-panel">
+
+  <div class="card">
+    <h2>Create Warehouse</h2>
+    <div id="warehouse-alert" class="alert"></div>
+    <form onsubmit="createWarehouse(event)">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Business Unit Code *</label>
+          <input id="wh-buc" type="text" placeholder="e.g. MWH.099" required/>
+        </div>
+        <div class="form-group">
+          <label>Location *</label>
+          <select id="wh-location" required>
+            <option value="">— select location —</option>
+            <option>ZWOLLE-001</option><option>ZWOLLE-002</option>
+            <option>AMSTERDAM-001</option><option>AMSTERDAM-002</option>
+            <option>TILBURG-001</option><option>HELMOND-001</option>
+            <option>EINDHOVEN-001</option><option>VETSBY-001</option>
+          </select>
+        </div>
+        <div class="form-group" style="max-width:110px">
+          <label>Capacity *</label>
+          <input id="wh-capacity" type="number" min="1" placeholder="100" required/>
+        </div>
+        <div class="form-group" style="max-width:110px">
+          <label>Stock</label>
+          <input id="wh-stock" type="number" min="0" placeholder="0"/>
+        </div>
+        <div class="form-group" style="max-width:80px; justify-content:flex-end">
+          <button type="submit" class="btn btn-primary">Create</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Replace Warehouse</h2>
+    <p style="font-size:12px;color:#57606a;margin-bottom:12px">
+      Archives the existing warehouse and creates a new one under the same Business Unit Code.
+      New stock must match the old warehouse stock.
+    </p>
+    <div id="replace-alert" class="alert"></div>
+    <form onsubmit="replaceWarehouse(event)">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Business Unit Code to replace *</label>
+          <input id="rep-buc" type="text" placeholder="e.g. MWH.001" required/>
+        </div>
+        <div class="form-group">
+          <label>New Location *</label>
+          <select id="rep-location" required>
+            <option value="">— select location —</option>
+            <option>ZWOLLE-001</option><option>ZWOLLE-002</option>
+            <option>AMSTERDAM-001</option><option>AMSTERDAM-002</option>
+            <option>TILBURG-001</option><option>HELMOND-001</option>
+            <option>EINDHOVEN-001</option><option>VETSBY-001</option>
+          </select>
+        </div>
+        <div class="form-group" style="max-width:110px">
+          <label>New Capacity *</label>
+          <input id="rep-capacity" type="number" min="1" required/>
+        </div>
+        <div class="form-group" style="max-width:110px">
+          <label>New Stock *</label>
+          <input id="rep-stock" type="number" min="0" required/>
+        </div>
+        <div class="form-group" style="max-width:80px; justify-content:flex-end">
+          <button type="submit" class="btn btn-warning">Replace</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Active Warehouses</h2>
+    <div id="warehouse-list"><p class="loading">Loading…</p></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     FULFILMENT TAB
+══════════════════════════════════════════════════════════ -->
+<div id="tab-fulfilment" class="tab-panel">
+
+  <div class="card">
+    <h2>Associate Warehouse → Store → Product</h2>
+    <p style="font-size:12px;color:#57606a;margin-bottom:12px">
+      Constraints: max <strong>2 warehouses</strong> per product per store ·
+      max <strong>3 warehouses</strong> per store ·
+      max <strong>5 product types</strong> per warehouse.
+    </p>
+    <div id="fulfilment-alert" class="alert"></div>
+    <form onsubmit="createFulfilment(event)">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Warehouse ID *</label>
+          <input id="f-warehouse" type="number" min="1" placeholder="1" required/>
+        </div>
+        <div class="form-group">
+          <label>Store ID *</label>
+          <input id="f-store" type="number" min="1" placeholder="1" required/>
+        </div>
+        <div class="form-group">
+          <label>Product ID *</label>
+          <input id="f-product" type="number" min="1" placeholder="1" required/>
+        </div>
+        <div class="form-group" style="max-width:90px; justify-content:flex-end">
+          <button type="submit" class="btn btn-primary">Associate</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Fulfilment Associations</h2>
+    <div id="fulfilment-list"><p class="loading">Loading…</p></div>
+  </div>
+
+  <!-- Reference tables -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+    <div class="card" style="margin-bottom:0">
+      <h2>Stores (IDs)</h2>
+      <div id="store-ref"><p class="loading">Loading…</p></div>
+    </div>
+    <div class="card" style="margin-bottom:0">
+      <h2>Products (IDs)</h2>
+      <div id="product-ref"><p class="loading">Loading…</p></div>
+    </div>
+    <div class="card" style="margin-bottom:0">
+      <h2>Warehouses (IDs)</h2>
+      <div id="warehouse-ref"><p class="loading">Loading…</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     LOCATIONS TAB
+══════════════════════════════════════════════════════════ -->
+<div id="tab-locations" class="tab-panel">
+  <div class="card">
+    <h2>Available Locations</h2>
+    <p style="font-size:12px;color:#57606a;margin-bottom:16px">
+      Locations are statically configured. Each has a maximum number of warehouses and a maximum total capacity.
+    </p>
+    <div class="locations-grid" id="locations-grid"></div>
+  </div>
+</div>
+
+<script>
+// ── tab switching ─────────────────────────────────────────────────────────────
+function showTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+  if (name === 'fulfilment') { loadFulfilment(); loadStoreRef(); loadProductRef(); loadWarehouseRef(); }
+  if (name === 'warehouses') loadWarehouses();
+  if (name === 'stores')     loadStores();
+  if (name === 'products')   loadProducts();
+  if (name === 'locations')  renderLocations();
+}
+
+// ── alert helpers ─────────────────────────────────────────────────────────────
+function showAlert(id, msg, type) {
+  var el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = 'alert alert-' + type + ' show';
+  setTimeout(() => el.classList.remove('show'), 4000);
+}
+
+// ── generic fetch helpers ─────────────────────────────────────────────────────
+function get(url) { return fetch(url).then(r => r.json()); }
+
+function post(url, body) {
+  return fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+}
+
+function put(url, body) {
+  return fetch(url, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+}
+
+function del(url) { return fetch(url, { method: 'DELETE' }); }
+
+async function handleResponse(res, alertId, successMsg, onSuccess) {
+  if (res.ok) {
+    showAlert(alertId, successMsg, 'success');
+    if (onSuccess) onSuccess();
+  } else {
+    var body = {};
+    try { body = await res.json(); } catch(e) {}
+    var msg = body.error || body.message || ('HTTP ' + res.status);
+    showAlert(alertId, msg, 'error');
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PRODUCTS
+// ══════════════════════════════════════════════════════════════════════════════
+function loadProducts() {
+  get('/product').then(products => {
+    var el = document.getElementById('product-list');
+    if (!products.length) { el.innerHTML = '<p class="empty">No products yet.</p>'; return; }
+    el.innerHTML = '<table><thead><tr><th>ID</th><th>Name</th><th>Description</th><th>Price</th><th>Stock</th><th>Actions</th></tr></thead><tbody>'
+      + products.map(p => `<tr>
+          <td>${p.id}</td>
+          <td><strong>${p.name}</strong></td>
+          <td>${p.description || '—'}</td>
+          <td>${p.price != null ? '€' + Number(p.price).toFixed(2) : '—'}</td>
+          <td>${p.stock}</td>
+          <td>
+            <button class="btn btn-sm" onclick="editProduct(${p.id},'${esc(p.name)}','${esc(p.description||'')}',${p.price||''},${p.stock})">Edit</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteProduct(${p.id})">Delete</button>
+          </td>
+        </tr>`).join('')
+      + '</tbody></table>';
+  });
+}
+
+function editProduct(id, name, desc, price, stock) {
+  document.getElementById('product-edit-id').value = id;
+  document.getElementById('product-name').value = name;
+  document.getElementById('product-description').value = desc;
+  document.getElementById('product-price').value = price || '';
+  document.getElementById('product-stock').value = stock;
+  document.getElementById('product-form-title').textContent = 'Edit Product #' + id;
+  document.getElementById('product-cancel').style.display = 'inline-block';
+  document.getElementById('product-name').focus();
+}
+
+function cancelProductEdit() {
+  document.getElementById('product-edit-id').value = '';
+  document.getElementById('product-name').value = '';
+  document.getElementById('product-description').value = '';
+  document.getElementById('product-price').value = '';
+  document.getElementById('product-stock').value = '';
+  document.getElementById('product-form-title').textContent = 'Add Product';
+  document.getElementById('product-cancel').style.display = 'none';
+}
+
+async function saveProduct(e) {
+  e.preventDefault();
+  var id    = document.getElementById('product-edit-id').value;
+  var body  = {
+    name:        document.getElementById('product-name').value,
+    description: document.getElementById('product-description').value || null,
+    price:       document.getElementById('product-price').value || null,
+    stock:       parseInt(document.getElementById('product-stock').value) || 0
+  };
+  var res = id ? await put('/product/' + id, body) : await post('/product', body);
+  await handleResponse(res, 'product-alert', id ? 'Product updated.' : 'Product created.', () => {
+    cancelProductEdit();
+    loadProducts();
+  });
+}
+
+async function deleteProduct(id) {
+  if (!confirm('Delete product #' + id + '?')) return;
+  var res = await del('/product/' + id);
+  await handleResponse(res, 'product-alert', 'Product deleted.', loadProducts);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// STORES
+// ══════════════════════════════════════════════════════════════════════════════
+function loadStores() {
+  get('/store').then(stores => {
+    var el = document.getElementById('store-list');
+    if (!stores.length) { el.innerHTML = '<p class="empty">No stores yet.</p>'; return; }
+    el.innerHTML = '<table><thead><tr><th>ID</th><th>Name</th><th>Products in Stock</th><th>Actions</th></tr></thead><tbody>'
+      + stores.map(s => `<tr>
+          <td>${s.id}</td>
+          <td><strong>${s.name}</strong></td>
+          <td>${s.quantityProductsInStock}</td>
+          <td>
+            <button class="btn btn-sm" onclick="editStore(${s.id},'${esc(s.name)}',${s.quantityProductsInStock})">Edit</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteStore(${s.id})">Delete</button>
+          </td>
+        </tr>`).join('')
+      + '</tbody></table>';
+  });
+}
+
+function editStore(id, name, qty) {
+  document.getElementById('store-edit-id').value = id;
+  document.getElementById('store-name').value = name;
+  document.getElementById('store-qty').value = qty;
+  document.getElementById('store-form-title').textContent = 'Edit Store #' + id;
+  document.getElementById('store-cancel').style.display = 'inline-block';
+}
+
+function cancelStoreEdit() {
+  document.getElementById('store-edit-id').value = '';
+  document.getElementById('store-name').value = '';
+  document.getElementById('store-qty').value = '';
+  document.getElementById('store-form-title').textContent = 'Add Store';
+  document.getElementById('store-cancel').style.display = 'none';
+}
+
+async function saveStore(e) {
+  e.preventDefault();
+  var id   = document.getElementById('store-edit-id').value;
+  var body = {
+    name:                    document.getElementById('store-name').value,
+    quantityProductsInStock: parseInt(document.getElementById('store-qty').value) || 0
+  };
+  var res = id ? await put('/store/' + id, body) : await post('/store', body);
+  await handleResponse(res, 'store-alert', id ? 'Store updated.' : 'Store created.', () => {
+    cancelStoreEdit();
+    loadStores();
+  });
+}
+
+async function deleteStore(id) {
+  if (!confirm('Delete store #' + id + '?')) return;
+  var res = await del('/store/' + id);
+  await handleResponse(res, 'store-alert', 'Store deleted.', loadStores);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// WAREHOUSES
+// ══════════════════════════════════════════════════════════════════════════════
+function loadWarehouses() {
+  get('/warehouse').then(wh => {
+    var el = document.getElementById('warehouse-list');
+    if (!wh.length) { el.innerHTML = '<p class="empty">No active warehouses.</p>'; return; }
+    el.innerHTML = '<table><thead><tr><th>Business Unit Code</th><th>Location</th><th>Capacity</th><th>Stock</th><th>Utilisation</th><th>Actions</th></tr></thead><tbody>'
+      + wh.map(w => {
+          var pct = w.capacity ? Math.round((w.stock / w.capacity) * 100) : 0;
+          var badge = pct >= 90 ? 'badge-red' : pct >= 60 ? 'badge-yellow' : 'badge-green';
+          return `<tr>
+            <td><strong>${w.businessUnitCode}</strong></td>
+            <td>${w.location}</td>
+            <td>${w.capacity}</td>
+            <td>${w.stock}</td>
+            <td><span class="badge ${badge}">${pct}%</span></td>
+            <td><button class="btn btn-sm btn-danger" onclick="archiveWarehouse('${w.businessUnitCode}')">Archive</button></td>
+          </tr>`;
+        }).join('')
+      + '</tbody></table>';
+  });
+}
+
+async function createWarehouse(e) {
+  e.preventDefault();
+  var body = {
+    businessUnitCode: document.getElementById('wh-buc').value,
+    location:         document.getElementById('wh-location').value,
+    capacity:         parseInt(document.getElementById('wh-capacity').value),
+    stock:            parseInt(document.getElementById('wh-stock').value) || 0
+  };
+  var res = await post('/warehouse', body);
+  await handleResponse(res, 'warehouse-alert', 'Warehouse created.', () => {
+    e.target.reset();
+    loadWarehouses();
+  });
+}
+
+async function archiveWarehouse(buc) {
+  if (!confirm('Archive warehouse ' + buc + '?')) return;
+  var res = await del('/warehouse/' + buc);
+  await handleResponse(res, 'warehouse-alert', 'Warehouse archived.', loadWarehouses);
+}
+
+async function replaceWarehouse(e) {
+  e.preventDefault();
+  var buc  = document.getElementById('rep-buc').value;
+  var body = {
+    businessUnitCode: buc,
+    location:         document.getElementById('rep-location').value,
+    capacity:         parseInt(document.getElementById('rep-capacity').value),
+    stock:            parseInt(document.getElementById('rep-stock').value)
+  };
+  var res = await post('/warehouse/' + buc + '/replacement', body);
+  await handleResponse(res, 'replace-alert', 'Warehouse replaced.', () => {
+    e.target.reset();
+    loadWarehouses();
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// FULFILMENT
+// ══════════════════════════════════════════════════════════════════════════════
+function loadFulfilment() {
+  get('/fulfilment').then(list => {
+    var el = document.getElementById('fulfilment-list');
+    if (!list.length) { el.innerHTML = '<p class="empty">No associations yet.</p>'; return; }
+    el.innerHTML = '<table><thead><tr><th>ID</th><th>Warehouse ID</th><th>Store ID</th><th>Product ID</th></tr></thead><tbody>'
+      + list.map(f => `<tr>
+          <td>${f.id}</td>
+          <td><span class="badge badge-blue">${f.warehouseId}</span></td>
+          <td><span class="badge badge-green">${f.storeId}</span></td>
+          <td><span class="badge badge-yellow">${f.productId}</span></td>
+        </tr>`).join('')
+      + '</tbody></table>';
+  });
+}
+
+async function createFulfilment(e) {
+  e.preventDefault();
+  var body = {
+    warehouseId: parseInt(document.getElementById('f-warehouse').value),
+    storeId:     parseInt(document.getElementById('f-store').value),
+    productId:   parseInt(document.getElementById('f-product').value)
+  };
+  var res = await post('/fulfilment', body);
+  await handleResponse(res, 'fulfilment-alert', 'Association created.', () => {
+    e.target.reset();
+    loadFulfilment();
+  });
+}
+
+function loadStoreRef() {
+  get('/store').then(list => {
+    var el = document.getElementById('store-ref');
+    if (!list.length) { el.innerHTML = '<p class="empty">—</p>'; return; }
+    el.innerHTML = '<table><thead><tr><th>ID</th><th>Name</th></tr></thead><tbody>'
+      + list.map(s => `<tr><td>${s.id}</td><td>${s.name}</td></tr>`).join('')
+      + '</tbody></table>';
+  });
+}
+
+function loadProductRef() {
+  get('/product').then(list => {
+    var el = document.getElementById('product-ref');
+    if (!list.length) { el.innerHTML = '<p class="empty">—</p>'; return; }
+    el.innerHTML = '<table><thead><tr><th>ID</th><th>Name</th></tr></thead><tbody>'
+      + list.map(p => `<tr><td>${p.id}</td><td>${p.name}</td></tr>`).join('')
+      + '</tbody></table>';
+  });
+}
+
+function loadWarehouseRef() {
+  get('/warehouse').then(list => {
+    var el = document.getElementById('warehouse-ref');
+    if (!list.length) { el.innerHTML = '<p class="empty">—</p>'; return; }
+    el.innerHTML = '<table><thead><tr><th>ID</th><th>BUC</th></tr></thead><tbody>'
+      + list.map(w => `<tr><td>lookup by BUC</td><td>${w.businessUnitCode}</td></tr>`).join('')
+      + '</tbody></table>';
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// LOCATIONS (static — mirrors LocationGateway.java)
+// ══════════════════════════════════════════════════════════════════════════════
+var LOCATIONS = [
+  { id: 'ZWOLLE-001',    maxWarehouses: 1, maxCapacity: 40  },
+  { id: 'ZWOLLE-002',    maxWarehouses: 2, maxCapacity: 50  },
+  { id: 'AMSTERDAM-001', maxWarehouses: 5, maxCapacity: 100 },
+  { id: 'AMSTERDAM-002', maxWarehouses: 3, maxCapacity: 75  },
+  { id: 'TILBURG-001',   maxWarehouses: 1, maxCapacity: 40  },
+  { id: 'HELMOND-001',   maxWarehouses: 1, maxCapacity: 45  },
+  { id: 'EINDHOVEN-001', maxWarehouses: 2, maxCapacity: 70  },
+  { id: 'VETSBY-001',    maxWarehouses: 1, maxCapacity: 90  }
+];
+
+function renderLocations() {
+  var grid = document.getElementById('locations-grid');
+  grid.innerHTML = LOCATIONS.map(loc => `
+    <div class="location-card">
+      <div class="loc-name">${loc.id}</div>
+      <div class="loc-detail">Max warehouses: <strong>${loc.maxWarehouses}</strong></div>
+      <div class="loc-detail">Max capacity: <strong>${loc.maxCapacity}</strong></div>
+    </div>`).join('');
+}
+
+// ── utility ───────────────────────────────────────────────────────────────────
+function esc(s) { return String(s).replace(/'/g, "\\'"); }
+
+// ── boot ──────────────────────────────────────────────────────────────────────
+loadProducts();
+</script>
 </body>
 </html>

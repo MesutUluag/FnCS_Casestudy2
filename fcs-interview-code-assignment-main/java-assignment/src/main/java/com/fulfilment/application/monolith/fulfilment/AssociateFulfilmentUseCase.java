@@ -28,6 +28,13 @@ public class AssociateFulfilmentUseCase {
 
   public FulfilmentAssociation associate(Long warehouseId, Long storeId, Long productId) {
 
+    // Guard: reject exact duplicate triple before any constraint checks
+    if (repository.associationExists(warehouseId, storeId, productId)) {
+      throw new IllegalArgumentException(
+          "Association (warehouse=" + warehouseId + ", store=" + storeId
+              + ", product=" + productId + ") already exists.");
+    }
+
     // Constraint 1: max 2 warehouses fulfilling the same product to the same store
     long warehousesForProductAtStore =
         repository.countDistinctWarehousesForProductAtStore(storeId, productId);

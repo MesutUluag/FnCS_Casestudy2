@@ -32,6 +32,8 @@ class AssociateFulfilmentUseCaseTest {
 
   @BeforeEach
   void defaultHappyPathStubs() {
+    // Duplicate guard: no existing triple by default
+    when(repository.associationExists(warehouseId, storeId, productId)).thenReturn(false);
     // Warehouse exists
     when(warehouseRepository.findById(warehouseId)).thenReturn(new DbWarehouse());
     // Constraint 1: 0 warehouses serve this product at this store
@@ -42,6 +44,18 @@ class AssociateFulfilmentUseCaseTest {
     // Constraint 3: product is new to this warehouse, warehouse has 0 products
     when(repository.warehouseAlreadyHasProduct(warehouseId, productId)).thenReturn(false);
     when(repository.countDistinctProductsByWarehouse(warehouseId)).thenReturn(0L);
+  }
+
+  // ── Duplicate guard ───────────────────────────────────────────────────────
+
+  @Test
+  void associate_duplicateTriple_shouldThrow() {
+    when(repository.associationExists(warehouseId, storeId, productId)).thenReturn(true);
+
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> useCase.associate(warehouseId, storeId, productId));
+    verify(repository, never()).persist(any(FulfilmentAssociation.class));
   }
 
   // ── Constraint 1: max 2 warehouses per product per store ──────────────────

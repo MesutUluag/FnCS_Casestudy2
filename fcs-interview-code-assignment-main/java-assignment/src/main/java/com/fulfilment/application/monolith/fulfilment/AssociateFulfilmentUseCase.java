@@ -1,10 +1,11 @@
 package com.fulfilment.application.monolith.fulfilment;
 
 import com.fulfilment.application.monolith.products.ProductRepository;
-import com.fulfilment.application.monolith.stores.Store;
+import com.fulfilment.application.monolith.stores.StoreRepository;
 import com.fulfilment.application.monolith.warehouses.adapters.database.WarehouseRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.NotFoundException;
 
 /**
  * Enforces the three fulfilment association constraints before persisting a new association:
@@ -24,18 +25,31 @@ public class AssociateFulfilmentUseCase {
 
   @Inject FulfilmentAssociationRepository repository;
   @Inject WarehouseRepository warehouseRepository;
+  @Inject StoreRepository storeRepository;
   @Inject ProductRepository productRepository;
 
   public FulfilmentAssociation associate(Long warehouseId, Long storeId, Long productId) {
 
-    // Guard: reject exact duplicate triple before any constraint checks
+    // Step 1: validate that all referenced entities exist before any other check.
+    // A missing entity must return 404 immediately — not a misleading constraint error.
+    if (warehouseRepository.findById(warehouseId) == null) {
+      throw new NotFoundException("Warehouse with id '" + warehouseId + "' not found.");
+    }
+    if (storeRepository.findById(storeId) == null) {
+      throw new NotFoundException("Store with id '" + storeId + "' not found.");
+    }
+    if (productRepository.findById(productId) == null) {
+      throw new NotFoundException("Product with id '" + productId + "' not found.");
+    }
+
+    // Step 2: reject exact duplicate triple
     if (repository.associationExists(warehouseId, storeId, productId)) {
       throw new IllegalArgumentException(
           "Association (warehouse=" + warehouseId + ", store=" + storeId
               + ", product=" + productId + ") already exists.");
     }
 
-    // Constraint 1: max 2 warehouses fulfilling the same product to the same store
+    // Step 3: Constraint 1 — max 2 warehouses fulfilling the same product to the same store
     long warehousesForProductAtStore =
         repository.countDistinctWarehousesForProductAtStore(storeId, productId);
     if (warehousesForProductAtStore >= MAX_WAREHOUSES_PER_PRODUCT_PER_STORE) {
@@ -45,7 +59,7 @@ public class AssociateFulfilmentUseCase {
               + " warehouses at store " + storeId + ".");
     }
 
-    // Constraint 2: max 3 warehouses serving the same store
+    // Step 4: Constraint 2 — max 3 warehouses serving the same store
     // Only count this warehouseId if it is new to this store
     if (!repository.warehouseAlreadyServesStore(warehouseId, storeId)) {
       long warehousesAtStore = repository.countDistinctWarehousesByStore(storeId);
@@ -56,7 +70,7 @@ public class AssociateFulfilmentUseCase {
       }
     }
 
-    // Constraint 3: max 5 product types per warehouse
+    // Step 5: Constraint 3 — max 5 product types per warehouse
     // Only count this productId if it is new to this warehouse
     if (!repository.warehouseAlreadyHasProduct(warehouseId, productId)) {
       long productsInWarehouse = repository.countDistinctProductsByWarehouse(warehouseId);
@@ -65,17 +79,6 @@ public class AssociateFulfilmentUseCase {
             "Warehouse " + warehouseId + " already stores "
                 + MAX_PRODUCTS_PER_WAREHOUSE + " types of products.");
       }
-    }
-
-    // Validate referenced entities exist (DB check, done after constraint checks)
-    if (warehouseRepository.findById(warehouseId) == null) {
-      throw new IllegalArgumentException("Warehouse with id '" + warehouseId + "' not found.");
-    }
-    if (Store.findById(storeId) == null) {
-      throw new IllegalArgumentException("Store with id '" + storeId + "' not found.");
-    }
-    if (productRepository.findById(productId) == null) {
-      throw new IllegalArgumentException("Product with id '" + productId + "' not found.");
     }
 
     FulfilmentAssociation association =

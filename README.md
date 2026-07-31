@@ -57,7 +57,7 @@ Adapters (WarehouseRepository → PostgreSQL, LocationGateway → static config)
 The **Store** and **Product** domains use a simpler Panache Repository pattern (no use-case layer).  
 The **Fulfilment** domain follows the same hexagonal pattern as Warehouse (use case + repository adapter).
 
-See [`QUESTIONS.md`](QUESTIONS.md) for a detailed discussion of the tradeoffs between these approaches.
+See [`QUESTIONS.md`](fcs-interview-code-assignment-main/java-assignment/QUESTIONS.md) for a detailed discussion of the tradeoffs between these approaches.
 
 ---
 
@@ -173,7 +173,7 @@ cd fcs-interview-code-assignment-main/java-assignment
 ./mvnw compile
 ```
 
-> **IntelliJ users** — see [`INTELLIJ_SETUP.md`](INTELLIJ_SETUP.md) for IDE configuration, annotation processing, and generated-sources setup.
+> **IntelliJ users** — see [`INTELLIJ_SETUP.md`](fcs-interview-code-assignment-main/java-assignment/INTELLIJ_SETUP.md) for IDE configuration, annotation processing, and generated-sources setup.
 
 ---
 
@@ -288,7 +288,7 @@ JAVA_HOME="/Library/Java/JavaVirtualMachines/jdk-17.0.3.1.jdk/Contents/Home" \
   ./mvnw test -Dtest="!ProductEndpointTest,!WarehouseEndpointIT"
 ```
 
-Expected output: **19 tests, 0 failures**.
+Expected output: **22 tests, 0 failures**.
 
 ### All tests (Docker required for integration tests)
 
@@ -305,7 +305,7 @@ JAVA_HOME="/Library/Java/JavaVirtualMachines/jdk-17.0.3.1.jdk/Contents/Home" \
 | `CreateWarehouseUseCaseTest` | 6 | All 5 creation validations + happy path |
 | `ArchiveWarehouseUseCaseTest` | 1 | Sets `archivedAt`, calls `update` |
 | `ReplaceWarehouseUseCaseTest` | 4 | Not-found, capacity check, stock check, happy path |
-| `AssociateFulfilmentUseCaseTest` | 6 | Duplicate guard + all 3 fulfilment constraints |
+| `AssociateFulfilmentUseCaseTest` | 9 | Not-found (warehouse/store/product) + duplicate guard + all 3 constraints |
 
 ---
 

@@ -1,12 +1,28 @@
 package com.fulfilment.application.monolith.warehouses.domain.usecases;
 
 import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
+import com.fulfilment.application.monolith.warehouses.domain.models.WarehouseConstraintException;
+import com.fulfilment.application.monolith.warehouses.domain.models.WarehouseConstraintException.Constraint;
 import com.fulfilment.application.monolith.warehouses.domain.ports.ReplaceWarehouseOperation;
 import com.fulfilment.application.monolith.warehouses.domain.ports.WarehouseStore;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.time.LocalDateTime;
 import java.util.NoSuchElementException;
 
+/**
+ * Replaces an active warehouse with a new one, enforcing:
+ *
+ * <ul>
+ *   <li>The warehouse to replace must exist and be active (404 if not found).
+ *   <li>{@link Constraint#REPLACEMENT_CAPACITY_BELOW_STOCK} — new capacity must cover current
+ *       stock.
+ *   <li>{@link Constraint#REPLACEMENT_STOCK_MISMATCH} — new warehouse stock must equal current
+ *       stock.
+ * </ul>
+ *
+ * <p>Violations are reported as {@link WarehouseConstraintException} so the REST layer can return
+ * a structured, human-readable 422 response to the frontend.
+ */
 @ApplicationScoped
 public class ReplaceWarehouseUseCase implements ReplaceWarehouseOperation {
 
@@ -30,22 +46,25 @@ public class ReplaceWarehouseUseCase implements ReplaceWarehouseOperation {
 
     // New warehouse capacity must accommodate existing warehouse stock
     if (newWarehouse.capacity < existing.stock) {
-      throw new IllegalArgumentException(
-          "New warehouse capacity ("
+      throw new WarehouseConstraintException(
+          Constraint.REPLACEMENT_CAPACITY_BELOW_STOCK,
+          "The new warehouse capacity ("
               + newWarehouse.capacity
-              + ") cannot accommodate the current stock ("
+              + ") is too low to accommodate the current stock ("
               + existing.stock
-              + ") of the warehouse being replaced.");
+              + ") of the warehouse being replaced. "
+              + "Please increase the capacity to at least " + existing.stock + ".");
     }
 
     // New warehouse stock must match existing warehouse stock
     if (!existing.stock.equals(newWarehouse.stock)) {
-      throw new IllegalArgumentException(
-          "New warehouse stock ("
+      throw new WarehouseConstraintException(
+          Constraint.REPLACEMENT_STOCK_MISMATCH,
+          "The replacement warehouse stock ("
               + newWarehouse.stock
-              + ") must match the stock of the warehouse being replaced ("
+              + ") must match the current stock of the warehouse being replaced ("
               + existing.stock
-              + ").");
+              + "). Stock cannot change during a warehouse replacement.");
     }
 
     // Archive the existing warehouse

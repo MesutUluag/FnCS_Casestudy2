@@ -1,5 +1,6 @@
 package com.fulfilment.application.monolith.warehouses.domain.usecases;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -8,6 +9,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
+import com.fulfilment.application.monolith.warehouses.domain.models.WarehouseConstraintException;
+import com.fulfilment.application.monolith.warehouses.domain.models.WarehouseConstraintException.Constraint;
 import com.fulfilment.application.monolith.warehouses.domain.ports.WarehouseStore;
 import java.util.NoSuchElementException;
 import org.junit.jupiter.api.BeforeEach;
@@ -80,7 +83,9 @@ class ReplaceWarehouseUseCaseTest {
     replacement.stock = 30;
     when(warehouseStore.findByBusinessUnitCode("MWH.001")).thenReturn(existing);
 
-    assertThrows(IllegalArgumentException.class, () -> useCase.replace(replacement));
+    WarehouseConstraintException ex = assertThrows(
+        WarehouseConstraintException.class, () -> useCase.replace(replacement));
+    assertEquals(Constraint.REPLACEMENT_CAPACITY_BELOW_STOCK, ex.getConstraint());
     verify(warehouseStore, never()).create(any());
   }
 
@@ -91,7 +96,9 @@ class ReplaceWarehouseUseCaseTest {
     replacement.stock = 99; // does not match existing.stock = 10
     when(warehouseStore.findByBusinessUnitCode("MWH.001")).thenReturn(existing);
 
-    assertThrows(IllegalArgumentException.class, () -> useCase.replace(replacement));
+    WarehouseConstraintException ex = assertThrows(
+        WarehouseConstraintException.class, () -> useCase.replace(replacement));
+    assertEquals(Constraint.REPLACEMENT_STOCK_MISMATCH, ex.getConstraint());
     verify(warehouseStore, never()).create(any());
   }
 }

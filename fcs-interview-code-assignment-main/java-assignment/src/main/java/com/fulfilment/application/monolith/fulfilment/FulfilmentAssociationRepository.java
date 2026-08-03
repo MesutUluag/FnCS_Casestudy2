@@ -8,20 +8,31 @@ import java.util.List;
 public class FulfilmentAssociationRepository
     implements PanacheRepository<FulfilmentAssociation> {
 
-  /** Distinct warehouse IDs that fulfil productId at storeId (constraint 1). */
+  /**
+   * Number of distinct warehouses fulfilling {@code productId} at {@code storeId} (constraint 1).
+   * Uses a single COUNT(DISTINCT) query — no row fetch, no in-memory distinct.
+   */
   public long countDistinctWarehousesForProductAtStore(Long storeId, Long productId) {
-    return list("storeId = ?1 and productId = ?2", storeId, productId).stream()
-        .map(a -> a.warehouseId)
-        .distinct()
-        .count();
+    return (long) getEntityManager()
+        .createQuery(
+            "select count(distinct a.warehouseId) from FulfilmentAssociation a"
+                + " where a.storeId = :storeId and a.productId = :productId")
+        .setParameter("storeId", storeId)
+        .setParameter("productId", productId)
+        .getSingleResult();
   }
 
-  /** Distinct warehouse IDs serving storeId across all products (constraint 2). */
+  /**
+   * Number of distinct warehouses serving {@code storeId} across all products (constraint 2).
+   * Uses a single COUNT(DISTINCT) query — no row fetch, no in-memory distinct.
+   */
   public long countDistinctWarehousesByStore(Long storeId) {
-    return list("storeId", storeId).stream()
-        .map(a -> a.warehouseId)
-        .distinct()
-        .count();
+    return (long) getEntityManager()
+        .createQuery(
+            "select count(distinct a.warehouseId) from FulfilmentAssociation a"
+                + " where a.storeId = :storeId")
+        .setParameter("storeId", storeId)
+        .getSingleResult();
   }
 
   /** Whether this warehouse already serves this store (for constraint 2 new-warehouse check). */
@@ -29,12 +40,17 @@ public class FulfilmentAssociationRepository
     return count("warehouseId = ?1 and storeId = ?2", warehouseId, storeId) > 0;
   }
 
-  /** Distinct product type IDs stored by warehouseId (constraint 3). */
+  /**
+   * Number of distinct product types held by {@code warehouseId} (constraint 3).
+   * Uses a single COUNT(DISTINCT) query — no row fetch, no in-memory distinct.
+   */
   public long countDistinctProductsByWarehouse(Long warehouseId) {
-    return list("warehouseId", warehouseId).stream()
-        .map(a -> a.productId)
-        .distinct()
-        .count();
+    return (long) getEntityManager()
+        .createQuery(
+            "select count(distinct a.productId) from FulfilmentAssociation a"
+                + " where a.warehouseId = :warehouseId")
+        .setParameter("warehouseId", warehouseId)
+        .getSingleResult();
   }
 
   /** Whether this warehouse already holds this product type (for constraint 3 new-product check). */

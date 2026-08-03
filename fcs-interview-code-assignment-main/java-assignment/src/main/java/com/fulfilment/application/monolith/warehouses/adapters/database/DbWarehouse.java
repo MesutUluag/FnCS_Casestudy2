@@ -1,16 +1,23 @@
 package com.fulfilment.application.monolith.warehouses.adapters.database;
 
+import com.fulfilment.application.monolith.exception.DbConstraints;
 import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
 import jakarta.persistence.Cacheable;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "warehouse")
 @Cacheable
+@Table(
+    name = "warehouse",
+    uniqueConstraints =
+        @UniqueConstraint(
+            name = DbConstraints.WAREHOUSE_BUSINESS_UNIT_CODE,
+            columnNames = "businessUnitCode"))
 public class DbWarehouse {
 
   @Id @GeneratedValue public Long id;

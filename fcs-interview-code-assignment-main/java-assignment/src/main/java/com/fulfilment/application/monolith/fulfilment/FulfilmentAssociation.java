@@ -1,5 +1,6 @@
 package com.fulfilment.application.monolith.fulfilment;
 
+import com.fulfilment.application.monolith.exception.DbConstraints;
 import jakarta.persistence.Cacheable;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -25,7 +26,9 @@ import jakarta.persistence.UniqueConstraint;
 @Table(
     name = "fulfilment_association",
     uniqueConstraints =
-        @UniqueConstraint(columnNames = {"warehouseId", "storeId", "productId"}))
+        @UniqueConstraint(
+            name = DbConstraints.FULFILMENT_ASSOCIATION_TRIPLE,
+            columnNames = {"warehouseId", "storeId", "productId"}))
 public class FulfilmentAssociation {
 
   @Id @GeneratedValue public Long id;

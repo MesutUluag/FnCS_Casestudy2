@@ -1,5 +1,6 @@
 package com.fulfilment.application.monolith.fulfilment;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -96,9 +97,10 @@ class AssociateFulfilmentUseCaseTest {
   void associate_duplicateTriple_shouldThrow() {
     when(repository.associationExists(warehouseId, storeId, productId)).thenReturn(true);
 
-    assertThrows(
-        IllegalArgumentException.class,
+    FulfilmentConstraintException ex = assertThrows(
+        FulfilmentConstraintException.class,
         () -> useCase.associate(warehouseId, storeId, productId));
+    assertEquals(FulfilmentConstraintException.Constraint.DUPLICATE_ASSOCIATION, ex.getConstraint());
     verify(repository, never()).persist(any(FulfilmentAssociation.class));
   }
 
@@ -109,9 +111,10 @@ class AssociateFulfilmentUseCaseTest {
     when(repository.countDistinctWarehousesForProductAtStore(storeId, productId))
         .thenReturn(2L); // already at max
 
-    assertThrows(
-        IllegalArgumentException.class,
+    FulfilmentConstraintException ex = assertThrows(
+        FulfilmentConstraintException.class,
         () -> useCase.associate(warehouseId, storeId, productId));
+    assertEquals(FulfilmentConstraintException.Constraint.MAX_WAREHOUSES_PER_PRODUCT_PER_STORE, ex.getConstraint());
     verify(repository, never()).persist(any(FulfilmentAssociation.class));
   }
 
@@ -122,9 +125,10 @@ class AssociateFulfilmentUseCaseTest {
     when(repository.warehouseAlreadyServesStore(warehouseId, storeId)).thenReturn(false);
     when(repository.countDistinctWarehousesByStore(storeId)).thenReturn(3L); // already at max
 
-    assertThrows(
-        IllegalArgumentException.class,
+    FulfilmentConstraintException ex = assertThrows(
+        FulfilmentConstraintException.class,
         () -> useCase.associate(warehouseId, storeId, productId));
+    assertEquals(FulfilmentConstraintException.Constraint.MAX_WAREHOUSES_PER_STORE, ex.getConstraint());
     verify(repository, never()).persist(any(FulfilmentAssociation.class));
   }
 
@@ -152,9 +156,10 @@ class AssociateFulfilmentUseCaseTest {
     when(repository.warehouseAlreadyHasProduct(warehouseId, productId)).thenReturn(false);
     when(repository.countDistinctProductsByWarehouse(warehouseId)).thenReturn(5L); // at max
 
-    assertThrows(
-        IllegalArgumentException.class,
+    FulfilmentConstraintException ex = assertThrows(
+        FulfilmentConstraintException.class,
         () -> useCase.associate(warehouseId, storeId, productId));
+    assertEquals(FulfilmentConstraintException.Constraint.MAX_PRODUCTS_PER_WAREHOUSE, ex.getConstraint());
     verify(repository, never()).persist(any(FulfilmentAssociation.class));
   }
 

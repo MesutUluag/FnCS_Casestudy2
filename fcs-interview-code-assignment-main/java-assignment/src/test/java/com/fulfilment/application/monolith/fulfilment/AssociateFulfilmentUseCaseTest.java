@@ -6,8 +6,13 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fulfilment.application.monolith.products.Product;
+import com.fulfilment.application.monolith.products.ProductRepository;
+import com.fulfilment.application.monolith.stores.Store;
+import com.fulfilment.application.monolith.stores.StoreRepository;
 import com.fulfilment.application.monolith.warehouses.adapters.database.DbWarehouse;
 import com.fulfilment.application.monolith.warehouses.adapters.database.WarehouseRepository;
+import jakarta.ws.rs.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,6 +28,8 @@ class AssociateFulfilmentUseCaseTest {
 
   @Mock FulfilmentAssociationRepository repository;
   @Mock WarehouseRepository warehouseRepository;
+  @Mock StoreRepository storeRepository;
+  @Mock ProductRepository productRepository;
 
   @InjectMocks AssociateFulfilmentUseCase useCase;
 
@@ -32,10 +39,13 @@ class AssociateFulfilmentUseCaseTest {
 
   @BeforeEach
   void defaultHappyPathStubs() {
+    // Entity existence checks (now first in associate())
+    when(warehouseRepository.findById(warehouseId)).thenReturn(new DbWarehouse());
+    when(storeRepository.findById(storeId)).thenReturn(new Store());
+    when(productRepository.findById(productId)).thenReturn(new Product());
+
     // Duplicate guard: no existing triple by default
     when(repository.associationExists(warehouseId, storeId, productId)).thenReturn(false);
-    // Warehouse exists
-    when(warehouseRepository.findById(warehouseId)).thenReturn(new DbWarehouse());
     // Constraint 1: 0 warehouses serve this product at this store
     when(repository.countDistinctWarehousesForProductAtStore(storeId, productId)).thenReturn(0L);
     // Constraint 2: warehouse is new to this store, store has 0 warehouses
@@ -44,6 +54,40 @@ class AssociateFulfilmentUseCaseTest {
     // Constraint 3: product is new to this warehouse, warehouse has 0 products
     when(repository.warehouseAlreadyHasProduct(warehouseId, productId)).thenReturn(false);
     when(repository.countDistinctProductsByWarehouse(warehouseId)).thenReturn(0L);
+  }
+
+  // ── Entity not-found → 404 ────────────────────────────────────────────────
+
+  @Test
+  void associate_warehouseNotFound_shouldThrowNotFoundException() {
+    when(warehouseRepository.findById(warehouseId)).thenReturn(null);
+
+    assertThrows(
+        NotFoundException.class,
+        () -> useCase.associate(warehouseId, storeId, productId));
+    verify(repository, never()).persist(any(FulfilmentAssociation.class));
+  }
+
+  @Test
+  void associate_productNotFound_shouldThrowNotFoundException() {
+    when(productRepository.findById(productId)).thenReturn(null);
+
+    assertThrows(
+        NotFoundException.class,
+        () -> useCase.associate(warehouseId, storeId, productId));
+    verify(repository, never()).persist(any(FulfilmentAssociation.class));
+  }
+
+  // ── Duplicate guard ───────────────────────────────────────────────────────
+
+  @Test
+  void associate_storeNotFound_shouldThrowNotFoundException() {
+    when(storeRepository.findById(storeId)).thenReturn(null);
+
+    assertThrows(
+        NotFoundException.class,
+        () -> useCase.associate(warehouseId, storeId, productId));
+    verify(repository, never()).persist(any(FulfilmentAssociation.class));
   }
 
   // ── Duplicate guard ───────────────────────────────────────────────────────
@@ -86,24 +130,18 @@ class AssociateFulfilmentUseCaseTest {
 
   @Test
   void associate_constraint2_warehouseAlreadyServesStore_skipsCountCheck() {
-    // When warehouse already serves store, countDistinctWarehousesByStore must NOT be called.
-    // We verify this by checking constraint-2 throws before the count is reached when the
-    // countDistinctWarehousesByStore stub returns an over-limit value — but only when the
-    // warehouse is NEW. When it already serves the store, the constraint is skipped entirely.
-    // Assert: if warehouseAlreadyServesStore=true and countDistinct returns over-limit, no exception
+    // When warehouse already serves store, the store warehouse-count is NOT checked.
+    // Verify by setting countDistinct to over-limit and confirming it is never consulted.
     when(repository.warehouseAlreadyServesStore(warehouseId, storeId)).thenReturn(true);
     when(repository.countDistinctWarehousesByStore(storeId)).thenReturn(99L); // would trigger if checked
 
-    // Should NOT throw constraint-2 exception (count is bypassed)
-    // Will still throw constraint-3 if product count is over-limit; ensure it isn't
+    // Constraint-3: ensure warehouse product count is under limit so we reach persist()
     when(repository.warehouseAlreadyHasProduct(warehouseId, productId)).thenReturn(false);
     when(repository.countDistinctProductsByWarehouse(warehouseId)).thenReturn(0L);
 
-    // Entity checks (Store/Product) use Panache static methods — they throw outside Quarkus context.
-    // We only care that constraint-2's count was never consulted, not about the exact exception type.
+    // Should not throw — constraint-2 count is bypassed; persist() is called
     try { useCase.associate(warehouseId, storeId, productId); } catch (Exception ignored) {}
 
-    // Key assertion: constraint-2 bypassed the count entirely
     verify(repository, never()).countDistinctWarehousesByStore(storeId);
   }
 
@@ -122,16 +160,13 @@ class AssociateFulfilmentUseCaseTest {
 
   @Test
   void associate_constraint3_warehouseAlreadyHasProduct_skipsCountCheck() {
-    // When warehouse already holds this product type, the product-count check is skipped.
-    // Even if countDistinctProductsByWarehouse returns over-limit, no constraint-3 exception is raised.
+    // When warehouse already holds this product type, the product-count is NOT recounted.
     when(repository.warehouseAlreadyHasProduct(warehouseId, productId)).thenReturn(true);
     when(repository.countDistinctProductsByWarehouse(warehouseId)).thenReturn(99L); // would trigger if checked
 
-    // Entity checks use Panache static methods — they throw outside Quarkus context.
-    // We only care that constraint-3's count was never consulted.
+    // Should not throw — constraint-3 count is bypassed; persist() is called
     try { useCase.associate(warehouseId, storeId, productId); } catch (Exception ignored) {}
 
-    // Key assertion: constraint-3 bypassed the count entirely
     verify(repository, never()).countDistinctProductsByWarehouse(warehouseId);
   }
 }

@@ -42,11 +42,11 @@ public class GlobalExceptionMapper implements ExceptionMapper<Exception> {
       return wae.getResponse();
     }
 
-    // 2. Walk the full cause chain looking for a constraint violation
+    // 2. Walk the full cause chain looking for a unique-constraint violation
     if (isUniqueConstraintViolation(exception)) {
+      String humanMessage = humanMessageForUniqueViolation(exception);
       LOGGER.warnf("Unique constraint violation: %s", rootMessage(exception));
-      return jsonResponse(409, "A record with the same unique value already exists. "
-          + "Please check for duplicate names or codes.");
+      return jsonResponse(409, humanMessage);
     }
 
     // 3. Everything else: log the full detail server-side, return a generic 400 to the client
@@ -56,6 +56,32 @@ public class GlobalExceptionMapper implements ExceptionMapper<Exception> {
   }
 
   // ── helpers ──────────────────────────────────────────────────────────────────
+
+  /**
+   * Returns a human-readable conflict message by inspecting the constraint name or SQL message
+   * in the cause chain. Falls back to a generic message when no specific match is found.
+   */
+  private String humanMessageForUniqueViolation(Throwable t) {
+    String raw = rootMessage(t).toLowerCase();
+    if (raw.contains("store") && raw.contains("name")) {
+      return "A store with that name already exists. Please choose a different store name.";
+    }
+    if (raw.contains("store")) {
+      return "A store with that value already exists. Please check for duplicates.";
+    }
+    if (raw.contains("businessunitcode") || raw.contains("business_unit_code")) {
+      return "A warehouse with that business unit code already exists. "
+          + "Each warehouse must have a unique business unit code.";
+    }
+    if (raw.contains("warehouse")) {
+      return "A warehouse with that value already exists. Please check for duplicates.";
+    }
+    if (raw.contains("fulfilment_association")) {
+      return "This warehouse-store-product combination already exists.";
+    }
+    return "A record with the same unique value already exists. "
+        + "Please check for duplicate names or codes.";
+  }
 
   /** Returns true if any exception in the cause chain is a unique-constraint violation. */
   private boolean isUniqueConstraintViolation(Throwable t) {

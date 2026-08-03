@@ -1,6 +1,9 @@
 package com.fulfilment.application.monolith.warehouses.adapters.restapi;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fulfilment.application.monolith.warehouses.adapters.database.WarehouseRepository;
+import com.fulfilment.application.monolith.warehouses.domain.models.WarehouseConstraintException;
 import com.fulfilment.application.monolith.warehouses.domain.ports.ArchiveWarehouseOperation;
 import com.fulfilment.application.monolith.warehouses.domain.ports.CreateWarehouseOperation;
 import com.fulfilment.application.monolith.warehouses.domain.ports.ReplaceWarehouseOperation;
@@ -11,9 +14,22 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+/**
+ * REST adapter for warehouse operations. Constraint violations thrown by the use cases are caught
+ * here and converted into HTTP 422 Unprocessable Entity with a structured JSON body:
+ *
+ * <pre>{@code
+ * {
+ *   "code": 422,
+ *   "constraint": "DUPLICATE_BUSINESS_UNIT_CODE",
+ *   "error": "A warehouse with business unit code 'MWH.001' already exists. ..."
+ * }
+ * }</pre>
+ */
 @RequestScoped
 public class WarehouseResourceImpl implements WarehouseResource {
 
@@ -21,6 +37,7 @@ public class WarehouseResourceImpl implements WarehouseResource {
   @Inject private CreateWarehouseOperation createWarehouseOperation;
   @Inject private ArchiveWarehouseOperation archiveWarehouseOperation;
   @Inject private ReplaceWarehouseOperation replaceWarehouseOperation;
+  @Inject private ObjectMapper objectMapper;
 
   @Override
   public List<Warehouse> listAllWarehousesUnits() {
@@ -36,8 +53,8 @@ public class WarehouseResourceImpl implements WarehouseResource {
     var warehouse = toDomainWarehouse(data);
     try {
       createWarehouseOperation.create(warehouse);
-    } catch (IllegalArgumentException e) {
-      throw new WebApplicationException(e.getMessage(), 400);
+    } catch (WarehouseConstraintException e) {
+      throw new WebApplicationException(constraintResponse(e));
     }
     return toWarehouseResponse(warehouse);
   }
@@ -71,10 +88,19 @@ public class WarehouseResourceImpl implements WarehouseResource {
       replaceWarehouseOperation.replace(newWarehouse);
     } catch (NoSuchElementException e) {
       throw new WebApplicationException(e.getMessage(), 404);
-    } catch (IllegalArgumentException e) {
-      throw new WebApplicationException(e.getMessage(), 400);
+    } catch (WarehouseConstraintException e) {
+      throw new WebApplicationException(constraintResponse(e));
     }
     return toWarehouseResponse(newWarehouse);
+  }
+
+  /** Builds a structured 422 JSON response body for a constraint violation. */
+  private Response constraintResponse(WarehouseConstraintException e) {
+    ObjectNode body = objectMapper.createObjectNode();
+    body.put("code", 422);
+    body.put("constraint", e.getConstraint().name());
+    body.put("error", e.getMessage());
+    return Response.status(422).entity(body).type("application/json").build();
   }
 
   /**

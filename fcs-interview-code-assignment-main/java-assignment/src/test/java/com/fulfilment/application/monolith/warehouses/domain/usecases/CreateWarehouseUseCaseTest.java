@@ -1,5 +1,6 @@
 package com.fulfilment.application.monolith.warehouses.domain.usecases;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -9,6 +10,8 @@ import static org.mockito.Mockito.when;
 
 import com.fulfilment.application.monolith.warehouses.domain.models.Location;
 import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
+import com.fulfilment.application.monolith.warehouses.domain.models.WarehouseConstraintException;
+import com.fulfilment.application.monolith.warehouses.domain.models.WarehouseConstraintException.Constraint;
 import com.fulfilment.application.monolith.warehouses.domain.ports.LocationResolver;
 import com.fulfilment.application.monolith.warehouses.domain.ports.WarehouseStore;
 import java.util.List;
@@ -59,7 +62,9 @@ class CreateWarehouseUseCaseTest {
     Warehouse warehouse = validWarehouse();
     when(warehouseStore.findByBusinessUnitCode("MWH.NEW")).thenReturn(new Warehouse());
 
-    assertThrows(IllegalArgumentException.class, () -> useCase.create(warehouse));
+    WarehouseConstraintException ex = assertThrows(
+        WarehouseConstraintException.class, () -> useCase.create(warehouse));
+    assertEquals(Constraint.DUPLICATE_BUSINESS_UNIT_CODE, ex.getConstraint());
     verify(warehouseStore, never()).create(any());
   }
 
@@ -69,7 +74,9 @@ class CreateWarehouseUseCaseTest {
     when(warehouseStore.findByBusinessUnitCode("MWH.NEW")).thenReturn(null);
     when(locationResolver.resolveByIdentifier("AMSTERDAM-001")).thenReturn(null);
 
-    assertThrows(IllegalArgumentException.class, () -> useCase.create(warehouse));
+    WarehouseConstraintException ex = assertThrows(
+        WarehouseConstraintException.class, () -> useCase.create(warehouse));
+    assertEquals(Constraint.LOCATION_NOT_FOUND, ex.getConstraint());
     verify(warehouseStore, never()).create(any());
   }
 
@@ -85,7 +92,9 @@ class CreateWarehouseUseCaseTest {
     existing.archivedAt = null;
     when(warehouseStore.getAll()).thenReturn(List.of(existing)); // already 1
 
-    assertThrows(IllegalArgumentException.class, () -> useCase.create(warehouse));
+    WarehouseConstraintException ex = assertThrows(
+        WarehouseConstraintException.class, () -> useCase.create(warehouse));
+    assertEquals(Constraint.LOCATION_WAREHOUSE_LIMIT_EXCEEDED, ex.getConstraint());
     verify(warehouseStore, never()).create(any());
   }
 
@@ -98,7 +107,9 @@ class CreateWarehouseUseCaseTest {
         .thenReturn(new Location("AMSTERDAM-001", 5, 100));
     when(warehouseStore.getAll()).thenReturn(List.of());
 
-    assertThrows(IllegalArgumentException.class, () -> useCase.create(warehouse));
+    WarehouseConstraintException ex = assertThrows(
+        WarehouseConstraintException.class, () -> useCase.create(warehouse));
+    assertEquals(Constraint.CAPACITY_EXCEEDS_LOCATION_MAX, ex.getConstraint());
     verify(warehouseStore, never()).create(any());
   }
 
@@ -112,7 +123,9 @@ class CreateWarehouseUseCaseTest {
         .thenReturn(new Location("AMSTERDAM-001", 5, 100));
     when(warehouseStore.getAll()).thenReturn(List.of());
 
-    assertThrows(IllegalArgumentException.class, () -> useCase.create(warehouse));
+    WarehouseConstraintException ex = assertThrows(
+        WarehouseConstraintException.class, () -> useCase.create(warehouse));
+    assertEquals(Constraint.STOCK_EXCEEDS_CAPACITY, ex.getConstraint());
     verify(warehouseStore, never()).create(any());
   }
 }

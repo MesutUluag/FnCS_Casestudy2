@@ -100,7 +100,8 @@ src/
 ├── main/
 │   ├── java/com/fulfilment/application/monolith/
 │   │   ├── exception/
-│   │   │   └── GlobalExceptionMapper.java        # Catches all exceptions → 400/404/409; never 500
+│   │   │   ├── DbConstraints.java                # Central registry of named DB unique constraints
+│   │   │   └── GlobalExceptionMapper.java        # Catches all exceptions → 400/409/422; never 500
 │   │   ├── location/
 │   │   │   └── LocationGateway.java              # Static location list; resolveByIdentifier()
 │   │   ├── stores/
@@ -126,8 +127,9 @@ src/
 │   │   └── fulfilment/
 │   │       ├── FulfilmentAssociation.java         # JPA entity
 │   │       ├── FulfilmentAssociationRepository.java
-│   │       ├── AssociateFulfilmentUseCase.java    # Enforces all 3 constraints + duplicate guard
-│   │       ├── FulfilmentResource.java            # GET + POST /fulfilment
+│   │       ├── FulfilmentConstraintException.java # Typed exception for all 4 fulfilment rules
+│   │       ├── AssociateFulfilmentUseCase.java    # Enforces all 4 rules (3 constraints + duplicate)
+│   │       ├── FulfilmentResource.java            # GET + POST /fulfilment; maps 422 on violation
 │   │       └── FulfilmentRequest.java             # Request DTO
 │   └── resources/
 │       ├── application.properties
@@ -144,7 +146,7 @@ src/
         ├── warehouses/adapters/restapi/
         │   └── WarehouseEndpointIT.java           # Integration test (requires Docker)
         └── fulfilment/
-            └── AssociateFulfilmentUseCaseTest.java # 6 tests (incl. duplicate-triple guard)
+            └── AssociateFulfilmentUseCaseTest.java # 11 tests (not-found × 3, duplicate, constraints × 4, skip-count × 2)
 ```
 
 ---
@@ -255,7 +257,7 @@ java -jar ./target/quarkus-app/quarkus-run.jar
 | Method | Path | Description |
 |---|---|---|
 | `GET` | `/fulfilment` | List all associations |
-| `POST` | `/fulfilment` | Create association (all 3 constraints + duplicate guard enforced) |
+| `POST` | `/fulfilment` | Create association (4 rules enforced: duplicate guard + 3 constraints) |
 
 **Fulfilment request body:**
 
@@ -267,15 +269,28 @@ java -jar ./target/quarkus-app/quarkus-run.jar
 }
 ```
 
+**Fulfilment 422 response body (constraint violation):**
+
+```json
+{
+  "code": 422,
+  "constraint": "MAX_WAREHOUSES_PER_STORE",
+  "error": "The selected store is already served by 3 warehouses, which is the maximum allowed."
+}
+```
+
+The `constraint` field is one of: `DUPLICATE_ASSOCIATION`, `MAX_WAREHOUSES_PER_PRODUCT_PER_STORE`, `MAX_WAREHOUSES_PER_STORE`, `MAX_PRODUCTS_PER_WAREHOUSE`.
+
 ### Error responses
 
-All errors return a JSON body with a `message` field. HTTP status codes used:
+All errors return a JSON body with a `code` and `error` field. HTTP status codes used:
 
 | Code | Meaning |
 |---|---|
-| `400` | Business rule violation or bad input |
+| `400` | Business rule violation, bad input, or unhandled application error |
 | `404` | Entity not found |
-| `409` | Duplicate fulfilment association triple |
+| `409` | Unique DB constraint violation (duplicate name, BUC, or association triple) |
+| `422` | Fulfilment constraint violated (structured JSON with `constraint` and `error` fields) |
 
 ---
 
@@ -305,7 +320,7 @@ JAVA_HOME="/Library/Java/JavaVirtualMachines/jdk-17.0.3.1.jdk/Contents/Home" \
 | `CreateWarehouseUseCaseTest` | 6 | All 5 creation validations + happy path |
 | `ArchiveWarehouseUseCaseTest` | 1 | Sets `archivedAt`, calls `update` |
 | `ReplaceWarehouseUseCaseTest` | 4 | Not-found, capacity check, stock check, happy path |
-| `AssociateFulfilmentUseCaseTest` | 9 | Not-found (warehouse/store/product) + duplicate guard + all 3 constraints |
+| `AssociateFulfilmentUseCaseTest` | 11 | Not-found ×3, duplicate guard, all 3 constraints, skip-count optimisation ×2 |
 
 ---
 
@@ -336,14 +351,24 @@ All form labels and card headings include **`?` tooltip icons** describing the r
 
 `GlobalExceptionMapper` catches all exceptions and walks the cause chain:
 
-- SQL state `23505` (unique violation) → **409 Conflict**
-- `WebApplicationException` → passed through as-is
-- `IllegalArgumentException` / anything else → **400 Bad Request**
+- `WebApplicationException` → passed through as-is (preserves 404, 422, etc.)
+- SQL state `23505` (unique violation) → **409 Conflict**; the violated constraint name is looked up in `DbConstraints` → `CONSTRAINT_MESSAGES` to produce a human-readable message (e.g. "A store with that name already exists.")
+- Everything else → **400 Bad Request** with a generic message
 - Never returns 500 to the client
 
-### Fulfilment duplicate guard
+`DbConstraints` is a central registry of named DB unique-constraint strings. Each constant is referenced both in the `@UniqueConstraint(name=…)` annotation on the entity and in `GlobalExceptionMapper`'s lookup map, ensuring a single source of truth.
 
-Before reaching the constraint checks, `AssociateFulfilmentUseCase` calls `FulfilmentAssociationRepository.associationExists()` to detect exact duplicate triples. This avoids a raw database constraint error and returns a clean 400 with a descriptive message.
+### Fulfilment constraint handling
+
+`AssociateFulfilmentUseCase` enforces four rules in order:
+
+1. **Entity existence** — warehouse, store, and product are each looked up before any constraint check; a missing entity throws `NotFoundException` → `404`.
+2. **Duplicate guard** — `FulfilmentAssociationRepository.associationExists()` detects an exact duplicate triple early, throwing `FulfilmentConstraintException(DUPLICATE_ASSOCIATION, …)`.
+3. **Constraint 1 (max 2 warehouses per product per store)** — throws `FulfilmentConstraintException(MAX_WAREHOUSES_PER_PRODUCT_PER_STORE, …)`.
+4. **Constraint 2 (max 3 warehouses per store)** — skipped if this warehouse already serves the store (idempotent check); throws `FulfilmentConstraintException(MAX_WAREHOUSES_PER_STORE, …)`.
+5. **Constraint 3 (max 5 product types per warehouse)** — skipped if the warehouse already holds this product; throws `FulfilmentConstraintException(MAX_PRODUCTS_PER_WAREHOUSE, …)`.
+
+`FulfilmentResource` catches `FulfilmentConstraintException` and returns **HTTP 422** with a structured JSON body containing `code`, `constraint` (enum name), and `error` (human-readable explanation) — making frontend error display straightforward without any string-parsing.
 
 ### Seed data idempotency
 

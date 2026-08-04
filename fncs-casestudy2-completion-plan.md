@@ -18,7 +18,7 @@ The plan is ordered so that each sub-task can be reviewed independently before t
 
 ### Sub-Task 1 — Implement `LocationGateway.resolveByIdentifier()`
 
-**Status:** `[ ] pending`
+**Status:** `[x] complete`
 
 **Intent:**
 This is the warm-up task and a pre-requisite for all warehouse operations. The static list of `Location` objects already exists inside the class. The single method `resolveByIdentifier` just needs to search that list and return the matching `Location` or `null`.
@@ -42,7 +42,7 @@ This is the warm-up task and a pre-requisite for all warehouse operations. The s
 
 ### Sub-Task 2 — Fix `StoreResource` Transaction Ordering
 
-**Status:** `[ ] pending`
+**Status:** `[x] complete`
 
 **Intent:**
 The `StoreResource` currently calls `LegacyStoreManagerGateway` (which simulates a downstream legacy system sync) *inside* the same `@Transactional` method as the DB persist, before the transaction commits. This means the legacy system could receive a notification about data that hasn't been committed yet (and might be rolled back). The fix ensures the legacy call only happens *after* the database commit is confirmed.
@@ -69,7 +69,7 @@ The recommended Quarkus approach is to use a CDI observer with `@Observes(during
 
 ### Sub-Task 3 — Implement `WarehouseRepository` (Persistence Adapter)
 
-**Status:** `[ ] pending`
+**Status:** `[x] complete`
 
 **Intent:**
 `WarehouseRepository` is the adapter between the domain and the database. It implements the `WarehouseStore` port. Currently four of its five methods throw `UnsupportedOperationException`. This sub-task fills those in so all downstream use cases can function.
@@ -97,7 +97,7 @@ The recommended Quarkus approach is to use a CDI observer with `@Observes(during
 
 ### Sub-Task 4 — Implement Warehouse Use Cases
 
-**Status:** `[ ] pending`
+**Status:** `[x] complete`
 
 **Intent:**
 The three use case classes (`CreateWarehouseUseCase`, `ArchiveWarehouseUseCase`, `ReplaceWarehouseUseCase`) each implement a domain port and orchestrate business logic. They are the heart of Task 3 in the assignment. Currently they contain no real logic.
@@ -147,7 +147,7 @@ The three use case classes (`CreateWarehouseUseCase`, `ArchiveWarehouseUseCase`,
 
 ### Sub-Task 5 — Implement `WarehouseResourceImpl` (REST Adapter)
 
-**Status:** `[ ] pending`
+**Status:** `[x] complete`
 
 **Intent:**
 `WarehouseResourceImpl` is the REST adapter that implements the auto-generated `WarehouseResource` interface (from `warehouse-openapi.yaml`). The `listAllWarehousesUnits()` method already works. The remaining four endpoint handlers need to delegate to use cases, convert between API beans and domain models, and map exceptions to appropriate HTTP status codes.
@@ -189,7 +189,7 @@ The three use case classes (`CreateWarehouseUseCase`, `ArchiveWarehouseUseCase`,
 
 ### Sub-Task 6 — Answer `QUESTIONS.md`
 
-**Status:** `[ ] pending`
+**Status:** `[x] complete`
 
 **Intent:**
 Provide written answers to the three technical discussion questions. Answers should be thoughtful, practical, and demonstrate senior-level reasoning about trade-offs.
@@ -222,7 +222,7 @@ Provide written answers to the three technical discussion questions. Answers sho
 
 ### Sub-Task 7 — Answer `CASE_STUDY.md` Scenarios
 
-**Status:** `[ ] pending`
+**Status:** `[x] complete`
 
 **Intent:**
 Provide a high-level business/technical discussion for the 4 cost-control scenarios (the file already contains detailed sub-questions as prompts). The instructions say to bridge technical and business perspectives at a high level — no deep implementation required. Note: the existing `CASE_STUDY.md` already contains very detailed written content per scenario. Verify whether the candidate answers are already filled in, or if only the sub-question prompts exist with blank answer sections.
@@ -243,7 +243,7 @@ Provide a high-level business/technical discussion for the 4 cost-control scenar
 
 ### Sub-Task 8 — BONUS: Warehouse-Product-Store Associations
 
-**Status:** `[ ] pending`
+**Status:** `[x] complete`
 
 **Intent:**
 Implement the optional feature: a `Warehouse` can be configured as a fulfilment source for a specific `Product` at a specific `Store`, subject to three constraints:

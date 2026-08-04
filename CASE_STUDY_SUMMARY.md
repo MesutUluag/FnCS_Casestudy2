@@ -145,11 +145,11 @@ http://localhost:8080/index.html
 
 ## Files to Complete
 
-- [ ] case-study/CASE_STUDY.md - Answer 5 scenarios
-- [ ] java-assignment/QUESTIONS.md - Answer 3 questions
-- [ ] LocationGateway.resolveByIdentifier() implementation
-- [ ] StoreResource transactional fixes
-- [ ] Warehouse CRUD operations with validations
-- [ ] Warehouse replace operation
-- [ ] Tests for implementations
-- [ ] (Bonus) Warehouse-Store-Product associations
+- [x] case-study/CASE_STUDY.md - Answer 5 scenarios
+- [x] java-assignment/QUESTIONS.md - Answer 3 questions
+- [x] LocationGateway.resolveByIdentifier() implementation
+- [x] StoreResource transactional fixes (CDI event + AFTER_SUCCESS observer)
+- [x] Warehouse CRUD operations with validations
+- [x] Warehouse replace operation
+- [x] Tests for implementations (22 unit tests + integration test)
+- [x] (Bonus) Warehouse-Store-Product associations with 422 constraint error responses

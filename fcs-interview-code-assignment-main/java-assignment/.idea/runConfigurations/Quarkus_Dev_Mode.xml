@@ -1,13 +1,32 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Quarkus Dev Mode" type="MavenRunConfiguration" factoryName="Maven">
     <MavenSettings>
-      <option name="workingDirPath" value="$PROJECT_DIR$" />
-      <option name="goals" value="quarkus:dev" />
-      <option name="runMavenInBackground" value="false" />
+      <option name="myGeneralSettings" />
+      <option name="myRunnerSettings" />
+      <option name="myRunnerParameters">
+        <MavenRunnerParameters>
+          <option name="cmdOptions" />
+          <option name="profiles">
+            <set />
+          </option>
+          <option name="goals">
+            <list>
+              <option value="quarkus:dev" />
+            </list>
+          </option>
+          <option name="multimoduleDir" />
+          <option name="pomFileName" value="pom.xml" />
+          <option name="profilesMap">
+            <map />
+          </option>
+          <option name="projectsCmdOptionValues">
+            <list />
+          </option>
+          <option name="resolveToWorkspace" value="false" />
+          <option name="workingDirPath" value="$PROJECT_DIR$" />
+        </MavenRunnerParameters>
+      </option>
     </MavenSettings>
-    <envs>
-      <env name="JAVA_HOME" value="/Library/Java/JavaVirtualMachines/jdk-17.0.3.1.jdk/Contents/Home" />
-    </envs>
     <method v="2" />
   </configuration>
 </component>
